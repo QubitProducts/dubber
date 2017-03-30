@@ -16,6 +16,7 @@ package dubber
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -68,6 +69,14 @@ func (r Record) String() string {
 // Zone is a collection of related Records
 type Zone []*Record
 
+func (z Zone) String() string {
+	strs := make([]string, len(z))
+	for i := range z {
+		strs[i] = fmt.Sprintf("%s %s", z[i].RR, z[i].Flags)
+	}
+	return strings.Join(strs, "\n")
+}
+
 // ByRR is a Zone ordered by it's resource records.
 type ByRR Zone
 
@@ -105,4 +114,25 @@ func (z ByRR) Dedupe() ByRR {
 		i++
 	}
 	return z
+}
+
+// ParseZoneData parses the text from the provided reader into
+// zone data. All errors encountered during parsing are collected
+// into the err response.
+func ParseZoneData(r io.Reader) (Zone, []error) {
+	var errs []error
+	var z Zone
+
+	for t := range dns.ParseZone(r, "", "") {
+		if t.Error != nil {
+			errs = append(errs, t.Error)
+			continue
+		}
+		if t.RR == nil {
+			continue
+		}
+		z = append(z, &Record{RR: t.RR, Flags: t.Comment})
+	}
+
+	return z, errs
 }
