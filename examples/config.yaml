@@ -1,0 +1,23 @@
+#{{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
+#{{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
+
+discoverers:
+  marathon:
+    - endpoints:
+      -  http://marathon.mesos.stg.irl.aws.qutics.com/api
+      template: |
+        ;Begin {{hello}}
+        {{- range .Applications }} 
+        {{- if (index .Labels "elb_dns_name")}}
+        {{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
+        {{- end }}
+        {{- end }}
+        ;End
+
+provisioner:
+  route53:
+    - zone: qutics.com
+  route53:
+    - zone: qubit.com
+  cloudflare:
+    - zone: curlpipesh.it
