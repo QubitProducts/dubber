@@ -1,11 +1,11 @@
 // Copyright 2017 Qubit Ltd.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //      http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,11 +26,6 @@ import (
 // State is any data passed from the discoverer to the
 // template to generate DNS records
 type State interface{}
-
-// BaseConfig is configuration common to all discoverers
-type BaseDiscovererConfig struct {
-	Template JSONTemplate `yaml:"template" json:"template"`
-}
 
 // Discoverer reads the state from the remote service.
 // The call should block until an updated state is
