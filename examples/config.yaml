@@ -14,10 +14,9 @@ discoverers:
         {{- end }}
         ;End
 
-provisioner:
+provisioners:
   route53:
-    - zone: qutics.com
-  route53:
-    - zone: qubit.com
+    - zone: qutics.com.
+    - zone: qubit.com.
   cloudflare:
-    - zone: curlpipesh.it
+    - zone: curlpipesh.it.

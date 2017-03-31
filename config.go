@@ -29,16 +29,16 @@ type BaseDiscovererConfig struct {
 // BaseProvisionerConfig is the configuration that is common to
 // all provisioners
 type BaseProvisionerConfig struct {
-	Zone string
+	Zone string `yaml:"zone" json:"zone"`
 }
 
 // Config describes the base configuration for dubber
 type Config struct {
 	Discoverers struct {
-		Marathon []MarathonConfig
+		Marathon []MarathonConfig `yaml:"marathon" json:"marathon"`
 	} `yaml:"discoverers" json:"discoverers"`
 	Provisioners struct {
-		Route53 []Route53Config
+		Route53 []Route53Config `yaml:"route53" json:"route53"`
 	} `yaml:"provisioners" json:"provisioners"`
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
 }
