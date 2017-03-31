@@ -15,8 +15,8 @@
 package dubber
 
 import (
-	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -30,6 +30,15 @@ type Record struct {
 	Flags string
 }
 
+// String implements fmt.Stringer for a Record
+func (r *Record) String() string {
+	str := r.RR.String()
+	if len(r.Flags) != 0 {
+		str += " " + r.Flags
+	}
+	return str
+}
+
 // Compare two Records
 func (r *Record) Compare(r2 *Record) int {
 	hi, hj := r.Header(), r2.Header()
@@ -38,18 +47,18 @@ func (r *Record) Compare(r2 *Record) int {
 	}
 
 	if hi.Ttl != hj.Ttl {
-		return int(hi.Ttl - hj.Ttl)
+		return int(hi.Ttl) - int(hj.Ttl)
 	}
 
 	if hi.Class != hj.Class {
-		return int(hi.Class - hj.Class)
+		return int(hi.Class) - int(hj.Class)
 	}
 
 	if hi.Rrtype != hj.Rrtype {
-		return int(hi.Rrtype - hj.Rrtype)
+		return int(hi.Rrtype) - int(hj.Rrtype)
 	}
 
-	if c := strings.Compare(r.String(), r2.String()); c != 0 {
+	if c := strings.Compare(r.RR.String(), r2.RR.String()); c != 0 {
 		return c
 	}
 
@@ -61,18 +70,13 @@ func (r *Record) Compare(r2 *Record) int {
 	return 0
 }
 
-// String implements fmt.Stringer for a Record
-func (r Record) String() string {
-	return fmt.Sprintf("%s %s", r.RR, r.Flags)
-}
-
 // Zone is a collection of related Records
 type Zone []*Record
 
 func (z Zone) String() string {
 	strs := make([]string, len(z))
 	for i := range z {
-		strs[i] = fmt.Sprintf("%s %s", z[i].RR, z[i].Flags)
+		strs[i] = z[i].String()
 	}
 	return strings.Join(strs, "\n")
 }
@@ -135,4 +139,45 @@ func ParseZoneData(r io.Reader) (Zone, []error) {
 	}
 
 	return z, errs
+}
+
+type bySuffix []string
+
+func (ss bySuffix) Len() int      { return len(ss) }
+func (ss bySuffix) Swap(i, j int) { ss[i], ss[j] = ss[j], ss[i] }
+
+func (ss bySuffix) Less(i, j int) bool {
+	var minLen int
+	if len(ss[i]) < len(ss[j]) {
+		minLen = len(ss[i])
+	} else {
+		minLen = len(ss[j])
+	}
+
+	for k := 0; k < minLen; k++ {
+		if d := ss[i][len(ss[i])-1-k] - ss[j][len(ss[j])-1-k]; d != 0 {
+			return ss[i][len(ss[i])-1-k] < ss[j][len(ss[j])-1-k]
+		}
+	}
+
+	return len(ss[i]) < len(ss[j])
+}
+
+// Partition splits a zones data into separate zones based on a
+// list of domains. Records are assigned to the longest matching
+// domain.
+func (z Zone) Partition(domains []string) map[string]Zone {
+	res := map[string]Zone{}
+	sort.Sort(sort.Reverse(bySuffix(domains)))
+
+	for _, r := range z {
+		for _, d := range domains {
+			if strings.HasSuffix(r.RR.Header().Name, d) {
+				res[d] = append(res[d], r)
+				break
+			}
+		}
+	}
+
+	return res
 }
