@@ -17,6 +17,7 @@ package dubber
 import (
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -32,6 +33,9 @@ type Record struct {
 
 // String implements fmt.Stringer for a Record
 func (r *Record) String() string {
+	if r == nil {
+		return ""
+	}
 	str := r.RR.String()
 	if len(r.Flags) != 0 {
 		str += " " + r.Flags
@@ -180,4 +184,102 @@ func (z Zone) Partition(domains []string) map[string]Zone {
 	}
 
 	return res
+}
+
+// Diff enumerates the differences between two zones. Both zones should be
+// sorted before calling.
+// The first return argument are those items only in the original zone
+// The Second return argument are those items common to both zones
+// The Third return argument are those items present only in the argument zone
+func (z Zone) Diff(z2 Zone) (Zone, Zone, Zone) {
+	var lz, cz, rz Zone
+
+	cz = lcsZone(z, z2)
+
+	j := 0
+	for i := 0; i < len(z); i++ {
+		if j < len(cz) && z[i].Compare(cz[j]) == 0 {
+			j++
+			continue
+		}
+		lz = append(lz, z[i])
+	}
+
+	j = 0
+	for i := 0; i < len(z2); i++ {
+		if j < len(cz) && z2[i].Compare(cz[j]) == 0 {
+			j++
+			continue
+		}
+		rz = append(rz, z2[i])
+	}
+
+	return lz, cz, rz
+}
+
+func lcsZone(a, b Zone) Zone {
+	lena := len(a)
+	lenb := len(b)
+
+	table := make([][]int, lena+1)
+	for i := range table {
+		table[i] = make([]int, lenb+1)
+	}
+
+	for i := 0; i <= lena; i++ {
+		table[i][0] = 0
+	}
+
+	for j := 0; j <= lenb; j++ {
+		table[0][j] = 0
+	}
+
+	for i := 1; i <= lena; i++ {
+		for j := 1; j <= lenb; j++ {
+			if a[i-1].Compare(b[j-1]) == 0 {
+				table[i][j] = table[i-1][j-1] + 1
+			} else {
+				table[i][j] = max(table[i-1][j], table[i][j-1])
+			}
+		}
+	}
+
+	return back(table, a, b, lena, lenb)
+}
+
+func max(more ...int) int {
+	max := more[0]
+	for _, elem := range more {
+		if max < elem {
+			max = elem
+		}
+	}
+	return max
+}
+
+func back(table [][]int, a, b Zone, i, j int) Zone {
+	if i == 0 || j == 0 {
+		return nil
+	} else if a[i-1].Compare(b[j-1]) == 0 {
+		return append(back(table, a, b, i-1, j-1), a[i-1])
+	} else {
+		if table[i][j-1] > table[i-1][j] {
+			return back(table, a, b, i, j-1)
+		}
+		return back(table, a, b, i-1, j)
+	}
+}
+
+type lcsTable [][]int
+
+func (t lcsTable) String() string {
+	str := ""
+	for i := range t {
+		for j := range t[i] {
+			str += strconv.Itoa(t[i][j])
+			str += " "
+		}
+		str += "\n"
+	}
+	return str
 }

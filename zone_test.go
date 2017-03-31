@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"reflect"
 	"sort"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -88,5 +90,106 @@ www.example.com.	10	IN	A	8.8.8.8 ; comment 2`,
 
 	if !reflect.DeepEqual(exp, rzmstr) {
 		t.Fatalf("  expected: %#v\n  got: %#v", exp, rzmstr)
+	}
+}
+
+func TestZoneDiff(t *testing.T) {
+	var test = []struct {
+		z1, z2, lz, cz, rz string
+	}{
+		{
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+
+			``,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			``,
+		},
+		{
+			``,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+
+			``,
+			``,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+		},
+		{
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			``,
+
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			``,
+			``,
+		},
+		{
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 3.3.3.3`,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+
+			``,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 3.3.3.3`,
+			`thing.example.com. 10 IN A 2.2.2.2`,
+		},
+		{
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 3.3.3.3`,
+
+			`thing.example.com. 10 IN A 2.2.2.2`,
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 3.3.3.3`,
+			``,
+		},
+	}
+
+	for i, st := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			z1, err := ParseZoneData(bytes.NewBuffer([]byte(st.z1)))
+			if err != nil {
+				t.Fatalf("expected no errors while parsing, got errs = %v", err)
+			}
+
+			z2, err := ParseZoneData(bytes.NewBuffer([]byte(st.z2)))
+			if err != nil {
+				t.Fatalf("expected no errors while parsing, got errs = %v", err)
+			}
+
+			sort.Sort(ByRR(z1))
+			sort.Sort(ByRR(z2))
+
+			lz, cz, rz := z1.Diff(z2)
+
+			glzstr := strings.Replace(lz.String(), "\t", " ", -1)
+			if glzstr != st.lz {
+				t.Fatalf("got lz: %v\nwanted: %v", glzstr, st.lz)
+			}
+			gczstr := strings.Replace(cz.String(), "\t", " ", -1)
+			if gczstr != st.cz {
+				t.Fatalf("got cz: %v\nwanted: %v", gczstr, st.cz)
+			}
+			grzstr := strings.Replace(rz.String(), "\t", " ", -1)
+			if grzstr != st.rz {
+				t.Fatalf("got rz: %v\nwanted: %v", grzstr, st.rz)
+			}
+		})
 	}
 }
