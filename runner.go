@@ -20,8 +20,6 @@ import (
 	"log"
 	"sort"
 	"time"
-
-	"github.com/miekg/dns"
 )
 
 // Run process the configuration, passing updates form discoverers,
@@ -57,16 +55,7 @@ func Run(ctx context.Context, cfg Config) {
 				continue
 			}
 			var z Zone
-			for t := range dns.ParseZone(buf, "", "") {
-				if t.Error != nil {
-					log.Printf("errors in zone config, %v", t.Error)
-					continue
-				}
-				if t.RR == nil {
-					continue
-				}
-				z = append(z, &Record{RR: t.RR, Flags: t.Comment})
-			}
+			ParseZoneData(buf)
 			sort.Sort(ByRR(z))
 			z = Zone(ByRR(z).Dedupe())
 

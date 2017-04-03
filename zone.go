@@ -15,6 +15,8 @@
 package dubber
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -23,12 +25,65 @@ import (
 	"github.com/miekg/dns"
 )
 
+type RecordFlags map[string]string
+
+func ParseRecordFlags(str string) (RecordFlags, error) {
+	var res RecordFlags
+
+	scan := bufio.NewScanner(strings.NewReader((str)))
+	for scan.Scan() {
+		vs := strings.SplitN(scan.Text(), "=", 2)
+		k := vs[0]
+		v := ""
+		if len(vs) == 2 {
+			v = vs[1]
+		}
+		if res == nil {
+			res = make(RecordFlags)
+		}
+		res[k] = v
+	}
+
+	if err := scan.Err(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (rf RecordFlags) String() string {
+	strs := []string{}
+
+	ks := []string{}
+	for k := range rf {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		str := k
+		if len(rf[k]) > 0 {
+			str += fmt.Sprintf("=%s", k, rf[k])
+		}
+		strs = append(strs, str)
+	}
+
+	return strings.Join(strs, " ")
+}
+
+func (rf RecordFlags) Compare(rf2 RecordFlags) int {
+	if c := len(rf) - len(rf2); c != 0 {
+		return c
+	}
+
+	return strings.Compare(rf.String(), rf2.String())
+}
+
 // Record represents a DNS record we wish to be present,
 // along with a Flags string which may contain hints to the
 // provisioner
 type Record struct {
 	dns.RR
-	Flags string
+	Flags RecordFlags
 }
 
 // String implements fmt.Stringer for a Record
@@ -38,7 +93,7 @@ func (r *Record) String() string {
 	}
 	str := r.RR.String()
 	if len(r.Flags) != 0 {
-		str += " " + r.Flags
+		str += " " + r.Flags.String()
 	}
 	return str
 }
@@ -66,7 +121,7 @@ func (r *Record) Compare(r2 *Record) int {
 		return c
 	}
 
-	if c := strings.Compare(r.Flags, r2.Flags); c != 0 {
+	if c := r.Flags.Compare(r2.Flags); c != 0 {
 		return c
 	}
 
@@ -139,7 +194,13 @@ func ParseZoneData(r io.Reader) (Zone, []error) {
 		if t.RR == nil {
 			continue
 		}
-		z = append(z, &Record{RR: t.RR, Flags: t.Comment})
+		flags, err := ParseRecordFlags(t.Comment)
+		if err != nil {
+			errs = append(errs, t.Error)
+			continue
+		}
+
+		z = append(z, &Record{RR: t.RR, Flags: flags})
 	}
 
 	return z, errs
