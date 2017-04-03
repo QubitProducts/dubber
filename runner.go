@@ -15,7 +15,6 @@
 package dubber
 
 import (
-	"bytes"
 	"context"
 	"log"
 	"sort"
@@ -24,51 +23,75 @@ import (
 
 // Run process the configuration, passing updates form discoverers,
 // managing state, and request action from provisioners.
-func Run(ctx context.Context, cfg Config) {
-	provs := map[string]Provisioner{}
-	for _, pcfg := range cfg.Provisioners.Route53 {
-		if _, ok := provs[pcfg.BaseProvisionerConfig.Zone]; ok {
-			log.Printf("provisioner for %s already defined", pcfg.Zone)
-			continue
-		}
-		provs[pcfg.BaseProvisionerConfig.Zone] = NewRoute53(pcfg)
+func Run(ctx context.Context, cfg Config) error {
+	provs, err := cfg.BuildProvisioners()
+	if err != nil {
+		return err
 	}
-	log.Printf("provisioner: %#v", provs)
 
-	for _, dcfg := range cfg.Discoverers.Marathon {
-		d, err := NewMarathon(dcfg)
-		if err != nil {
-			log.Printf("failed to create discoverer, %v", err)
-			continue
-		}
+	var provisionZones []string
+	for k := range provs {
+		provisionZones = append(provisionZones, k)
+	}
 
-		for {
-			state, err := d.Discover(ctx)
-			if err != nil {
-				log.Printf("failed to run discoverer, %v", err)
-				continue
-			}
+	ds, err := cfg.BuildDiscoveres()
+	if err != nil {
+		return err
+	}
 
-			buf := &bytes.Buffer{}
-			if err := dcfg.Template.Execute(buf, state); err != nil {
-				log.Printf("failed to execute template, %v", err)
-				continue
-			}
-			var z Zone
-			ParseZoneData(buf)
-			sort.Sort(ByRR(z))
-			z = Zone(ByRR(z).Dedupe())
+	type update struct {
+		i int
+		z Zone
+	}
+	upds := make(chan update)
 
-			for k, v := range z.Partition([]string{"qubit.com.", "qutics.com."}) {
-				p, ok := provs[k]
-				if !ok {
-					log.Printf("no provisioner for %s", k)
-					continue
+	// Launch the discoverers
+	for i, d := range ds {
+		go func(i int, d Discoverer) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					z, err := d.Discover(ctx)
+					if err != nil {
+						log.Println("error", err)
+						return
+					}
+					upds <- update{i, z}
 				}
-				p.EnsureState(v)
+				time.Sleep(10 * time.Second)
 			}
+		}(i, d)
+	}
 
-			time.Sleep(10 * time.Second)
+	dzones := make([]Zone, len(ds))
+	lastZones := map[string]Zone{}
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case up := <-upds:
+			dzones[up.i] = up.z
+
+			var fullZone Zone
+			for i := range dzones {
+				fullZone = append(fullZone, dzones[i]...)
+			}
+			sort.Sort(ByRR(fullZone))
+			fullZone = Zone(ByRR(fullZone).Dedupe())
+
+			zones := fullZone.Partition(provisionZones)
+
+			for zn, newzone := range zones {
+				p, ok := provs[zn]
+				if !ok {
+					log.Printf("no provisioner for zone %q\n", zn)
+				}
+				p.EnsureState(newzone)
+				lastZones[zn] = newzone
+			}
 		}
 	}
+	return nil
 }

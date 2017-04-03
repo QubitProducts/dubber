@@ -16,7 +16,11 @@ package dubber
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -43,14 +47,62 @@ type Config struct {
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
 }
 
-// ConfigFromYAML creates a dubber config from a YAML config file
+// FromYAML creates a dubber config from a YAML config file
 func FromYAML(r io.Reader) (Config, error) {
 	bs := &bytes.Buffer{}
-	io.Copy(bs, r)
+	_, err := io.Copy(bs, r)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{}
-	err := yaml.Unmarshal(bs.Bytes(), &cfg)
+	err = yaml.Unmarshal(bs.Bytes(), &cfg)
+	if err != nil {
+		return Config{}, err
+	}
+
+	if len(cfg.XXX) > 0 {
+		unknowns := []string{}
+		for k := range cfg.XXX {
+			unknowns = append(unknowns, k)
+		}
+		return Config{}, fmt.Errorf("unknown top level config options: %s", strings.Join(unknowns, ","))
+	}
+
 	return cfg, err
 }
 
 // XXX catches unknown Rule settings
 type XXX map[string]interface{}
+
+// BuildProvisioners returns the set of provisioners for this config
+func (cfg Config) BuildProvisioners() (map[string]Provisioner, error) {
+	prvs := map[string]Provisioner{}
+	for _, pcfg := range cfg.Provisioners.Route53 {
+		dom := pcfg.Zone
+		prv := NewRoute53(pcfg)
+		if _, ok := prvs[dom]; ok {
+			return nil, fmt.Errorf("zone %q managed by multiple provisioners")
+		}
+		prvs[dom] = prv
+	}
+	return prvs, nil
+}
+
+// BuildDiscoveres returns the set of discoveres for this config
+func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
+	var ds []Discoverer
+	for i := range cfg.Discoverers.Marathon {
+		mcfg := cfg.Discoverers.Marathon[i]
+		m, err := NewMarathon(mcfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "building marathon Discoverer failed")
+		}
+
+		ds = append(ds, Discoverer{
+			StatePuller:  m,
+			JSONTemplate: mcfg.Template,
+		})
+	}
+	return ds, nil
+}

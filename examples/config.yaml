@@ -9,7 +9,7 @@ discoverers:
         ;Begin {{hello}}
         {{- range .Applications }} 
         {{- if (index .Labels "elb_dns_name")}}
-        {{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
+        {{ index .Labels "elb_dns_name"}} 0 A 0.0.0.0 ; zone={{or (index .Labels "elb_security_groups") "private"}}
         {{- end }}
         {{- end }}
         ;End
@@ -20,3 +20,4 @@ provisioners:
     - zone: qubit.com.
   cloudflare:
     - zone: curlpipesh.it.
+

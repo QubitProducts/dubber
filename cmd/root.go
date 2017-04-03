@@ -57,5 +57,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		dubber.Run(ctx, cfg)
+
+		os.Exit(0)
 	},
 }

@@ -180,10 +180,26 @@ func (z ByRR) Dedupe() ByRR {
 	return z
 }
 
+// ZoneError is the set of errors seen when parsing Zone
+// data
+type ZoneError []error
+
+func (z ZoneError) Error() string {
+	var strs []string
+
+	for _, e := range z {
+		strs = append(strs, e.Error())
+	}
+	if len(strs) > 0 {
+		strs = append([]string{fmt.Sprintf("%d errors while processing zone:\n", len(strs))}, strs...)
+	}
+	return strings.Join(strs, "\n")
+}
+
 // ParseZoneData parses the text from the provided reader into
 // zone data. All errors encountered during parsing are collected
 // into the err response.
-func ParseZoneData(r io.Reader) (Zone, []error) {
+func ParseZoneData(r io.Reader) (Zone, error) {
 	var errs []error
 	var z Zone
 
@@ -207,7 +223,10 @@ func ParseZoneData(r io.Reader) (Zone, []error) {
 		z = append(z, &Record{RR: t.RR, Flags: flags})
 	}
 
-	return z, errs
+	if len(errs) > 0 {
+		return nil, ZoneError(errs)
+	}
+	return z, nil
 }
 
 type bySuffix []string

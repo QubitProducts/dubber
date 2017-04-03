@@ -15,23 +15,53 @@
 package dubber
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/pkg/errors"
 )
 
 // State is any data passed from the discoverer to the
 // template to generate DNS records
 type State interface{}
 
-// Discoverer reads the state from the remote service.
+// StatePuller reads the state from the remote service.
 // The call should block until an updated state is
 // available
-type Discoverer interface {
-	Discover(context.Context) (State, error)
+type StatePuller interface {
+	StatePull(context.Context) (State, error)
+}
+
+// Discoverer combined zone data and state into a Zone
+type Discoverer struct {
+	StatePuller
+	State interface{}
+	JSONTemplate
+}
+
+// Discover pulls the state from a StatePuller and renders the
+// state into Zone data
+func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
+	state, err := d.StatePull(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to pull state")
+	}
+	buf := &bytes.Buffer{}
+	err = d.Execute(buf, state)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to render zone")
+	}
+
+	z, err := ParseZoneData(buf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse zone")
+	}
+	d.State = state
+	return z, nil
 }
 
 // JSONTemplate provides a means of directly unmarshaling a template

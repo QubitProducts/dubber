@@ -17,11 +17,14 @@ package dubber
 import (
 	"fmt"
 	"log"
+	"sort"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 )
 
 type Route53Config struct {
@@ -38,8 +41,16 @@ func NewRoute53(cfg Route53Config) *Route53 {
 
 func (r *Route53) EnsureState(z Zone) {
 	remz, err := r.zoneFromRoute53(r.Zone)
-	log.Println(remz, err)
-	return
+	if err != nil {
+		return
+	}
+
+	missing, _, _ := remz.Diff(z)
+	if len(missing) == 0 {
+		return
+	}
+
+	log.Println("missing", missing)
 }
 
 func (r *Route53) zoneFromRoute53(name string) (Zone, error) {
@@ -70,15 +81,52 @@ func (r *Route53) zoneFromRoute53(name string) (Zone, error) {
 
 	var z Zone
 	for i := range awsrecs {
-		r, err := dns.NewRR(fmt.Sprintf("%s 10 IN MX 10 0.0.0.0", *awsrecs[i].Name))
+		newrs, err := awsRRToRecord(awsrecs[i])
 		if err != nil {
-			log.Println("err: ", err.Error())
-			continue
+			return nil, errors.Wrapf(err, "failed rendering record for %#v", awsrecs[i])
 		}
-		z = append(z, &Record{
-			RR: r,
-		})
+
+		z = append(z, newrs...)
 	}
 
+	sort.Sort(ByRR(z))
+
 	return z, nil
+}
+
+func awsRRToRecord(r53 *route53.ResourceRecordSet) (Zone, error) {
+	var res Zone
+	var err error
+	flags := RecordFlags{}
+	if r53.SetIdentifier != nil {
+		flags["route53.SetID"] = *r53.SetIdentifier
+	}
+
+	if r53.Weight != nil {
+		flags["route53.Weight"] = strconv.Itoa(int(*r53.Weight))
+	}
+
+	for i := range r53.ResourceRecords {
+		rr := r53.ResourceRecords[i]
+		str := fmt.Sprintf("%s %d IN %s %s", *r53.Name, *r53.TTL, *r53.Type, *rr.Value)
+		drr, err := dns.NewRR(str)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		res = append(res, &Record{RR: drr, Flags: flags})
+	}
+
+	if r53.AliasTarget != nil {
+		str := fmt.Sprintf("%s 0 IN %s 0.0.0.0", *r53.Name, *r53.Type)
+		drr, err := dns.NewRR(str)
+		if err != nil {
+			return res, err
+		}
+		flags["route53.Alias"] = *r53.AliasTarget.HostedZoneId + ":" + *r53.AliasTarget.DNSName
+
+		res = append(res, &Record{RR: drr, Flags: flags})
+	}
+	return res, err
 }

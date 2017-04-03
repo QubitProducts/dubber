@@ -34,6 +34,8 @@ type MarathonConfig struct {
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
 }
 
+// MarathonState holds the state information we will pass to the configuration
+// template.
 type MarathonState struct {
 	Applications map[string]marathon.Application
 	Tasks        map[string]marathon.Task
@@ -60,11 +62,11 @@ func NewMarathon(cfg MarathonConfig) (*Marathon, error) {
 	return &Marathon{Marathon: mc}, err
 }
 
-// Discover watches, or polls, marathon for new applications.
+// StatePull watches, or polls, marathon for new applications.
 // Any matching the requires constraints are returned.
 // THe first call to Discover returns all the known apps,
 // Subsequent calls block until an individial update is found.
-func (m *Marathon) Discover(ctx context.Context) (State, error) {
+func (m *Marathon) StatePull(ctx context.Context) (State, error) {
 	m.Lock()
 	m.Unlock()
 
