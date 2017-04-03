@@ -31,6 +31,7 @@ func ParseRecordFlags(str string) (RecordFlags, error) {
 	var res RecordFlags
 
 	scan := bufio.NewScanner(strings.NewReader((str)))
+	scan.Split(bufio.ScanWords)
 	for scan.Scan() {
 		vs := strings.SplitN(scan.Text(), "=", 2)
 		k := vs[0]
@@ -62,7 +63,7 @@ func (rf RecordFlags) String() string {
 	for _, k := range ks {
 		str := k
 		if len(rf[k]) > 0 {
-			str += fmt.Sprintf("=%s", k, rf[k])
+			str += fmt.Sprintf("=%s", rf[k])
 		}
 		strs = append(strs, str)
 	}
@@ -93,7 +94,7 @@ func (r *Record) String() string {
 	}
 	str := r.RR.String()
 	if len(r.Flags) != 0 {
-		str += " " + r.Flags.String()
+		str += " ; " + r.Flags.String()
 	}
 	return str
 }
@@ -194,12 +195,15 @@ func ParseZoneData(r io.Reader) (Zone, []error) {
 		if t.RR == nil {
 			continue
 		}
-		flags, err := ParseRecordFlags(t.Comment)
-		if err != nil {
-			errs = append(errs, t.Error)
-			continue
+		var flags RecordFlags
+		if len(t.Comment) > 1 {
+			var err error
+			flags, err = ParseRecordFlags(t.Comment[1:])
+			if err != nil {
+				errs = append(errs, t.Error)
+				continue
+			}
 		}
-
 		z = append(z, &Record{RR: t.RR, Flags: flags})
 	}
 

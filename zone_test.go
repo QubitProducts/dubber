@@ -13,20 +13,20 @@ func TestZoneDedupe(t *testing.T) {
 	var z1 = `
 ; comment is ignored
 thing.example.com 10 AAAA 2001:4860:4860::8888
-thing2.example.com 10 IN A 8.8.8.8 ; comment 1
+thing2.example.com 10 IN A 8.8.8.8 ; comment=1 aws.Route53.alias=mything
 thing2.example.com 10 IN A 8.8.8.8
-thing.example.com 10 IN A 8.8.8.8 ; comment 1
-thing.example.com 10 IN A 8.8.8.8 ; comment 1
-thing.example.com 10 IN A 8.8.8.8 ; comment 2
-thing.example.com 10 IN A 9.9.9.9 ; comment 3
+thing.example.com 10 IN A 8.8.8.8 ; comment=1
+thing.example.com 10 IN A 8.8.8.8 ; comment=1
+thing.example.com 10 IN A 8.8.8.8 ; comment=2
+thing.example.com 10 IN A 9.9.9.9 ; comment=3
 `
 
-	var z2 = `thing.example.com.	10	IN	A	8.8.8.8 ; comment 1
-thing.example.com.	10	IN	A	8.8.8.8 ; comment 2
-thing.example.com.	10	IN	A	9.9.9.9 ; comment 3
+	var z2 = `thing.example.com.	10	IN	A	8.8.8.8 ; comment=1
+thing.example.com.	10	IN	A	8.8.8.8 ; comment=2
+thing.example.com.	10	IN	A	9.9.9.9 ; comment=3
 thing.example.com.	10	IN	AAAA	2001:4860:4860::8888
 thing2.example.com.	10	IN	A	8.8.8.8
-thing2.example.com.	10	IN	A	8.8.8.8 ; comment 1`
+thing2.example.com.	10	IN	A	8.8.8.8 ; aws.Route53.alias=mything comment=1`
 
 	z, err := ParseZoneData(bytes.NewBuffer([]byte(z1)))
 	if err != nil {
@@ -40,22 +40,22 @@ thing2.example.com.	10	IN	A	8.8.8.8 ; comment 1`
 }
 
 func TestZonePartition(t *testing.T) {
-	var zstr = `www.example.com.	10	IN	A	8.8.8.8 ; comment 1
-www.example.com.	10	IN	A	8.8.8.8 ; comment 2
-www.thing.example.com.	10	IN	A	9.9.9.9 ; comment 3
+	var zstr = `www.example.com.	10	IN	A	8.8.8.8 ; comment=1
+www.example.com.	10	IN	A	8.8.8.8 ; comment=2
+www.thing.example.com.	10	IN	A	9.9.9.9 ; comment=3
 www2.thing.example.com.	10	IN	AAAA	2001:4860:4860::8888
 other.com.	10	IN	A	8.8.8.8
 thing2.example2.com.	10	IN	A	8.8.8.8
-www.thing2.example2.com.	10	IN	A	8.8.8.8 ; comment 1
+www.thing2.example2.com.	10	IN	A	8.8.8.8 ; comment=1
 `
 
 	var exp = map[string]string{
-		"thing.example.com.": `www.thing.example.com.	10	IN	A	9.9.9.9 ; comment 3
+		"thing.example.com.": `www.thing.example.com.	10	IN	A	9.9.9.9 ; comment=3
 www2.thing.example.com.	10	IN	AAAA	2001:4860:4860::8888`,
 		"example2.com.": `thing2.example2.com.	10	IN	A	8.8.8.8
-www.thing2.example2.com.	10	IN	A	8.8.8.8 ; comment 1`,
-		"example.com.": `www.example.com.	10	IN	A	8.8.8.8 ; comment 1
-www.example.com.	10	IN	A	8.8.8.8 ; comment 2`,
+www.thing2.example2.com.	10	IN	A	8.8.8.8 ; comment=1`,
+		"example.com.": `www.example.com.	10	IN	A	8.8.8.8 ; comment=1
+www.example.com.	10	IN	A	8.8.8.8 ; comment=2`,
 		"com.": `other.com.	10	IN	A	8.8.8.8`,
 	}
 
