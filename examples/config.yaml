@@ -6,13 +6,17 @@ discoverers:
     - endpoints:
       -  http://marathon.mesos.stg.irl.aws.qutics.com/api
       template: |
-        ;Begin {{hello}}
+        {{- $publicLB := "1234:dualstak.public"}}
+        {{- $privateLB := "1234:dualstak.private"}}
         {{- range .Applications }} 
-        {{- if (index .Labels "elb_dns_name")}}
-        {{ index .Labels "elb_dns_name"}} 0 A 0.0.0.0 ; zone={{or (index .Labels "elb_security_groups") "private"}}
+        {{- if (index .Labels "traefik.dnsName") }}
+        {{- if eq (index .Labels "traefik.externalAccess") "public" }}
+        {{ index .Labels "traefik.dnsName"}} A 0.0.0.0 ; route53.Alias={{$publicLB}}
+        {{- else }}
+        {{ index .Labels "traefik.dnsName"}} A 0.0.0.0 ; route53.Alias={{$privateLB}}
         {{- end }}
         {{- end }}
-        ;End
+        {{- end }}
 
 provisioners:
   route53:

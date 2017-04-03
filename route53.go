@@ -45,12 +45,20 @@ func (r *Route53) EnsureState(z Zone) {
 		return
 	}
 
-	missing, _, _ := remz.Diff(z)
+	_, _, missing := remz.Diff(z)
 	if len(missing) == 0 {
 		return
 	}
 
-	log.Println("missing", missing)
+	missingGroup := missing.Group()
+	haveGroup := remz.Group()
+	for k, want := range missingGroup {
+		have, ok := haveGroup[k]
+		if ok {
+			log.Println(have.Diff(want))
+		}
+		log.Println("make all:", want)
+	}
 }
 
 func (r *Route53) zoneFromRoute53(name string) (Zone, error) {

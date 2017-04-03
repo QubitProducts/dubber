@@ -367,3 +367,41 @@ func (t lcsTable) String() string {
 	}
 	return str
 }
+
+// FindSet finds the set of records matching the provided name, class and type
+func (z Zone) FindSet(name string, class uint16, rrtype uint16) Zone {
+	var nz Zone
+	for _, rr := range z {
+		if rr.Header().Name == name &&
+			rr.Header().Class == class &&
+			rr.Header().Rrtype == rrtype {
+			nz = append(nz, rr)
+		}
+	}
+
+	return nz
+}
+
+type RecordSetKey struct {
+	Name   string
+	Class  uint16
+	Rrtype uint16
+}
+
+// Group all the records by Name,Class and Type
+func (z Zone) Group() map[RecordSetKey]Zone {
+	res := map[RecordSetKey]Zone{}
+
+	for _, rr := range z {
+		k := RecordSetKey{
+			Name:   rr.Header().Name,
+			Class:  rr.Header().Class,
+			Rrtype: rr.Header().Rrtype,
+		}
+		rz := res[k]
+		rz = append(rz, rr)
+		res[k] = rz
+	}
+
+	return res
+}
