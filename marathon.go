@@ -70,10 +70,6 @@ func (m *Marathon) StatePull(ctx context.Context) (State, error) {
 	m.Lock()
 	m.Unlock()
 
-	if m.data != nil {
-		return m.data, nil
-	}
-
 	apps, err := m.Marathon.Applications(url.Values{})
 	if err != nil {
 		return nil, err

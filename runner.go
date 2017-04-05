@@ -17,7 +17,6 @@ package dubber
 import (
 	"context"
 	"log"
-	"sort"
 	"time"
 )
 
@@ -48,11 +47,13 @@ func Run(ctx context.Context, cfg Config) error {
 	// Launch the discoverers
 	for i, d := range ds {
 		go func(i int, d Discoverer) {
+			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				default:
+				case <-ticker.C:
 					z, err := d.Discover(ctx)
 					if err != nil {
 						log.Println("error", err)
@@ -60,36 +61,37 @@ func Run(ctx context.Context, cfg Config) error {
 					}
 					upds <- update{i, z}
 				}
-				time.Sleep(10 * time.Second)
 			}
 		}(i, d)
 	}
 
 	dzones := make([]Zone, len(ds))
-	lastZones := map[string]Zone{}
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case up := <-upds:
+			log.Println("Got update", up)
 			dzones[up.i] = up.z
 
 			var fullZone Zone
 			for i := range dzones {
 				fullZone = append(fullZone, dzones[i]...)
 			}
-			sort.Sort(ByRR(fullZone))
-			fullZone = Zone(ByRR(fullZone).Dedupe())
 
 			zones := fullZone.Partition(provisionZones)
+
+			log.Printf("$#v", zones)
 
 			for zn, newzone := range zones {
 				p, ok := provs[zn]
 				if !ok {
 					log.Printf("no provisioner for zone %q\n", zn)
 				}
-				p.EnsureState(newzone)
-				lastZones[zn] = newzone
+				err := ReconcileZone(p, newzone)
+				if err != nil {
+					log.Println(err.Error())
+				}
 			}
 		}
 	}

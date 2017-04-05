@@ -39,26 +39,14 @@ func NewRoute53(cfg Route53Config) *Route53 {
 	return &Route53{cfg}
 }
 
-func (r *Route53) EnsureState(z Zone) {
-	remz, err := r.zoneFromRoute53(r.Zone)
-	if err != nil {
-		return
-	}
+func (r *Route53) RemoteZone() (Zone, error) {
+	return r.zoneFromRoute53(r.Zone)
+}
 
-	_, _, missing := remz.Diff(z)
-	if len(missing) == 0 {
-		return
-	}
-
-	missingGroup := missing.Group()
-	haveGroup := remz.Group()
-	for k, want := range missingGroup {
-		have, ok := haveGroup[k]
-		if ok {
-			log.Println(have.Diff(want))
-		}
-		log.Println("make all:", want)
-	}
+func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
+	log.Println("wanted: ", wanted)
+	log.Println("unwanted: ", unwanted)
+	return nil
 }
 
 func (r *Route53) zoneFromRoute53(name string) (Zone, error) {

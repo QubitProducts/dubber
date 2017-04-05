@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -39,7 +40,8 @@ type BaseProvisionerConfig struct {
 // Config describes the base configuration for dubber
 type Config struct {
 	Discoverers struct {
-		Marathon []MarathonConfig `yaml:"marathon" json:"marathon"`
+		Marathon   []MarathonConfig   `yaml:"marathon" json:"marathon"`
+		Kubernetes []KubernetesConfig `yaml:"kubernetes" json:"kubernetes"`
 	} `yaml:"discoverers" json:"discoverers"`
 	Provisioners struct {
 		Route53 []Route53Config `yaml:"route53" json:"route53"`
@@ -93,15 +95,30 @@ func (cfg Config) BuildProvisioners() (map[string]Provisioner, error) {
 func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 	var ds []Discoverer
 	for i := range cfg.Discoverers.Marathon {
-		mcfg := cfg.Discoverers.Marathon[i]
-		m, err := NewMarathon(mcfg)
+		dcfg := cfg.Discoverers.Marathon[i]
+		d, err := NewMarathon(dcfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "building marathon Discoverer failed")
 		}
 
 		ds = append(ds, Discoverer{
-			StatePuller:  m,
-			JSONTemplate: mcfg.Template,
+			StatePuller:  d,
+			JSONTemplate: dcfg.Template,
+			EchoTo:       os.Stderr,
+		})
+	}
+
+	for i := range cfg.Discoverers.Kubernetes {
+		dcfg := cfg.Discoverers.Kubernetes[i]
+		d, err := NewKubernetes(dcfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "building kubernetes Discoverer failed")
+		}
+
+		ds = append(ds, Discoverer{
+			StatePuller:  d,
+			JSONTemplate: dcfg.Template,
+			EchoTo:       os.Stderr,
 		})
 	}
 	return ds, nil

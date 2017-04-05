@@ -56,7 +56,10 @@ var RootCmd = &cobra.Command{
 			log.Fatalf("Unable to read config, %v", err)
 		}
 
-		dubber.Run(ctx, cfg)
+		err = dubber.Run(ctx, cfg)
+		if err != nil {
+			log.Fatalf("run failed, %v", err)
+		}
 
 		os.Exit(0)
 	},
