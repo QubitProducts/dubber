@@ -46,7 +46,11 @@ type Config struct {
 	Provisioners struct {
 		Route53 []Route53Config `yaml:"route53" json:"route53"`
 	} `yaml:"provisioners" json:"provisioners"`
+
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
+
+	DryRun  bool `json:"-"  yaml:"-"`
+	OneShot bool `json:"-"  yaml:"-"`
 }
 
 // FromYAML creates a dubber config from a YAML config file

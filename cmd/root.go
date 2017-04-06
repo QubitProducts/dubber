@@ -27,10 +27,12 @@ import (
 func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
+	RootCmd.PersistentFlags().BoolVar(&oneshot, "onehot", false, "Do one run only and exit")
 }
 
 var cfgFile = "dubber.yaml"
 var dryrun bool
+var oneshot bool
 
 var RootCmd = &cobra.Command{
 	Use:   "dubber",
@@ -55,6 +57,9 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Unable to read config, %v", err)
 		}
+
+		cfg.DryRun = dryrun
+		cfg.OneShot = oneshot
 
 		err = dubber.Run(ctx, cfg)
 		if err != nil {

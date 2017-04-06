@@ -1,19 +1,16 @@
-#{{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
-#{{ index .Labels "elb_dns_name"}} A 0.0.0.0 ; {{or (index .Labels "elb_security_groups") "private"}}
-
 discoverers:
   marathon:
     - endpoints:
       -  http://marathon.mesos.stg.irl.aws.qutics.com/api
       template: |
-        {{- $publicLB := "1234:dualstak.public"}}
-        {{- $privateLB := "1234:dualstak.private"}}
+        {{- $publicLB := "Z32O12XQLNTSW2:dualstack.traefik-staging-public-19452940.eu-west-1.elb.amazonaws.com."}}
+        {{- $privateLB := "Z32O12XQLNTSW2:dualstack.traefik-staging-private-19452940.eu-west-1.elb.amazonaws.com."}}
         {{- range .Applications }} 
         {{- if (index .Labels "traefik.dnsName") }}
         {{- if eq (index .Labels "traefik.externalAccess") "public" }}
-        {{ index .Labels "traefik.dnsName"}} A 0.0.0.0 ; route53.Alias={{$publicLB}}
+        {{ index .Labels "traefik.dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$publicLB}}
         {{- else }}
-        {{ index .Labels "traefik.dnsName"}} A 0.0.0.0 ; route53.Alias={{$privateLB}}
+        {{ index .Labels "traefik.dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$privateLB}}
         {{- end }}
         {{- end }}
         {{- end }}
@@ -21,7 +18,7 @@ discoverers:
 provisioners:
   route53:
     - zone: qutics.com.
-    - zone: qubit.com.
+      zoneid: Z39K8F8G3PARLC
   cloudflare:
     - zone: curlpipesh.it.
 

@@ -14,14 +14,17 @@
 
 package dubber
 
-import "sort"
+import (
+	"log"
+	"sort"
+)
 
 type Provisioner interface {
 	RemoteZone() (Zone, error)
 	UpdateZone(remove, add Zone) error
 }
 
-func ReconcileZone(p Provisioner, desired Zone) error {
+func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	dgroups := desired.Group()
 
 	remz, err := p.RemoteZone()
@@ -31,6 +34,7 @@ func ReconcileZone(p Provisioner, desired Zone) error {
 
 	rgroups := remz.Group()
 
+	var allWanted, allUnwanted Zone
 	for dgroupKey, dgroup := range dgroups {
 		rgroup, ok := rgroups[dgroupKey]
 		if !ok {
@@ -44,9 +48,21 @@ func ReconcileZone(p Provisioner, desired Zone) error {
 		rgroup = Zone(ByRR(rgroup).Dedupe())
 
 		wanted, _, unwanted := dgroup.Diff(rgroup)
-		if len(wanted) > 0 || len(unwanted) > 0 {
-			p.UpdateZone(wanted, unwanted)
-		}
+
+		allUnwanted = append(allUnwanted, unwanted...)
+		allWanted = append(allWanted, wanted...)
 	}
-	return nil
+
+	if len(allWanted) == 0 && len(allUnwanted) == 0 {
+		log.Println("nothing to do")
+		return nil
+	}
+
+	if dryRun {
+		log.Println("Unwanted records to be removed: ", allUnwanted)
+		log.Println("Wanted records to be added: ", allWanted)
+		return nil
+	}
+
+	return p.UpdateZone(allWanted, allUnwanted)
 }

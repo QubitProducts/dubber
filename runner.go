@@ -71,7 +71,6 @@ func Run(ctx context.Context, cfg Config) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case up := <-upds:
-			log.Println("Got update", up)
 			dzones[up.i] = up.z
 
 			var fullZone Zone
@@ -81,14 +80,13 @@ func Run(ctx context.Context, cfg Config) error {
 
 			zones := fullZone.Partition(provisionZones)
 
-			log.Printf("$#v", zones)
-
 			for zn, newzone := range zones {
 				p, ok := provs[zn]
 				if !ok {
 					log.Printf("no provisioner for zone %q\n", zn)
+					continue
 				}
-				err := ReconcileZone(p, newzone)
+				err := ReconcileZone(p, newzone, cfg.DryRun)
 				if err != nil {
 					log.Println(err.Error())
 				}
