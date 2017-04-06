@@ -15,8 +15,11 @@
 package dubber
 
 import (
+	"fmt"
 	"log"
 	"sort"
+
+	"github.com/miekg/dns"
 )
 
 type Provisioner interface {
@@ -33,6 +36,24 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	}
 
 	rgroups := remz.Group()
+
+	var soarr *Record
+	for rgroupKey, rgroup := range rgroups {
+		if rgroupKey.Rrtype != dns.TypeSOA {
+			continue
+		}
+		if soarr != nil || len(rgroup) > 1 {
+			return fmt.Errorf("multople SOA records found")
+		}
+		if len(rgroup) != 1 {
+			return fmt.Errorf("invalid group fp SOA records, must have exactly one record, got , ", rgroup)
+		}
+		soarr = rgroup[0]
+	}
+
+	if soarr == nil {
+		return fmt.Errorf("no SOA records found")
+	}
 
 	var allWanted, allUnwanted Zone
 	for dgroupKey, dgroup := range dgroups {
@@ -58,9 +79,21 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 		return nil
 	}
 
+	// generate a new SOA record.
+	soa, ok := soarr.RR.(*dns.SOA)
+	if !ok {
+		return fmt.Errorf("unable to cast dns.RR %q to SOA record", soa)
+	}
+
+	newsoa := *soa
+	newsoa.Serial++
+
+	allWanted = append(allWanted, &Record{RR: &newsoa})
+	allUnwanted = append(allUnwanted, soarr)
+
 	if dryRun {
-		log.Println("Unwanted records to be removed: ", allUnwanted)
-		log.Println("Wanted records to be added: ", allWanted)
+		log.Println("Unwanted records to be removed:\n", allUnwanted)
+		log.Println("Wanted records to be added:\n", allWanted)
 		return nil
 	}
 
