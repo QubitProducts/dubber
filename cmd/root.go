@@ -28,6 +28,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
 	RootCmd.PersistentFlags().BoolVar(&oneshot, "onehot", false, "Do one run only and exit")
+	addAllFlagsToPFlagSet(RootCmd.PersistentFlags())
 }
 
 var cfgFile = "dubber.yaml"
