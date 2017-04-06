@@ -35,6 +35,7 @@ var cfgFile = "dubber.yaml"
 var dryrun bool
 var oneshot bool
 
+// RootCmd is the main Cobra command for the dubber application
 var RootCmd = &cobra.Command{
 	Use:   "dubber",
 	Short: "dubber provisions DNS names for dynamic services",

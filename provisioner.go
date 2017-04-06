@@ -22,11 +22,27 @@ import (
 	"github.com/miekg/dns"
 )
 
+// A Provisioner can manage a zone. RemoteZone should include exactly 1 SOA
+// record. It is assumed that Zones do not change without that Serial Number
+// being changed. In the event that records must be added/removed from the
+// Zone retuned by RemoteZone, UpdateZone will be called with the relevant
+// changes, plus an update to the SOA record. It is assumed that an update
+// will fail if the SOA serial from the remove list does not match the
+// SOA of the current remote zone state.
 type Provisioner interface {
 	RemoteZone() (Zone, error)
 	UpdateZone(remove, add Zone) error
 }
 
+// ReconcileZone attempts to ensure that the set of records in the desired
+// zone are pressent in the Provisioners zone.
+// - Records are grouped by Name, Type ad Class.
+// - Records from the provisioner that are not listed in the desired set
+//   are ignored.
+// - Records of a given "Name, Type , Class" combination that are in the
+//   remote zone, but not in the desired zone are removed.
+// - Records of a given "Name, Type , Class" combination that are in the
+//   desired zone, nit not in the remote zone are added.
 func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	dgroups := desired.Group()
 
@@ -46,7 +62,7 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 			return fmt.Errorf("multople SOA records found")
 		}
 		if len(rgroup) != 1 {
-			return fmt.Errorf("invalid group fp SOA records, must have exactly one record, got , ", rgroup)
+			return fmt.Errorf("invalid group fp SOA records, must have exactly one record, got %v", rgroup)
 		}
 		soarr = rgroup[0]
 	}

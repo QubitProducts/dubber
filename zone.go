@@ -25,8 +25,12 @@ import (
 	"github.com/miekg/dns"
 )
 
+// RecordFlags is a set of KV pairs, parsed from the comments of a record.
+// They are used to pass hints to the provisioners.
 type RecordFlags map[string]string
 
+// ParseRecordFlags parses simple K=V pairs from a comment on a record.
+// Any bare words are included and are assumed to have a "" value.
 func ParseRecordFlags(str string) (RecordFlags, error) {
 	var res RecordFlags
 
@@ -52,6 +56,8 @@ func ParseRecordFlags(str string) (RecordFlags, error) {
 	return res, nil
 }
 
+// String implements Stringer for a RecordFlags, rendering
+// the strings in sorted order
 func (rf RecordFlags) String() string {
 	strs := []string{}
 
@@ -71,6 +77,10 @@ func (rf RecordFlags) String() string {
 	return strings.Join(strs, " ")
 }
 
+// Compare two sets of RecordFlags. Retursn  > 0 if
+// mthere are more flags in rf2 than rf. If the number
+// of flags is the same, the String representations are
+// compared.
 func (rf RecordFlags) Compare(rf2 RecordFlags) int {
 	if c := len(rf) - len(rf2); c != 0 {
 		return c
@@ -133,6 +143,7 @@ func (r *Record) Compare(r2 *Record) int {
 // Zone is a collection of related Records
 type Zone []*Record
 
+// String renders the text version of the Zone data
 func (z Zone) String() string {
 	strs := make([]string, len(z))
 	for i := range z {
@@ -184,6 +195,8 @@ func (z ByRR) Dedupe() ByRR {
 // data
 type ZoneError []error
 
+// Error implenebts the Error interface for a set of errors
+// found when parsing a zone.
 func (z ZoneError) Error() string {
 	var strs []string
 
@@ -382,6 +395,7 @@ func (z Zone) FindSet(name string, class uint16, rrtype uint16) Zone {
 	return nz
 }
 
+// RecordSetKey is used to group records by name, type and class
 type RecordSetKey struct {
 	Name   string
 	Class  uint16

@@ -25,43 +25,60 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"github.com/golang/glog"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 )
 
+// Route53Config is used to provide settings for a Route53 provisioner.
+// If the ZoneID is not set it will be looked up in the clients default
+// region.
 type Route53Config struct {
-	BaseProvisionerConfig `json:",omitempty" yaml:",omitempty,inline"`
+	BaseProvisionerConfig `json:",omitempty,inline" yaml:",omitempty,inline"`
 	ZoneID                string `json:"zoneid,omitempty" yaml:"zoneid,omitempty"`
 }
 
+// Route53 is an AWS Route53 DNS record provisioner.
 type Route53 struct {
+	svc route53iface.Route53API
 	sync.Mutex
 	Route53Config
 }
 
+// NewRoute53 creates a route53 provisioner. Currently this uses the
+// default client setup from the aws-sdk.
 func NewRoute53(cfg Route53Config) *Route53 {
-	return &Route53{Route53Config: cfg}
+	sess := session.Must(session.NewSession())
+	svc := route53.New(sess)
+
+	return &Route53{
+		Route53Config: cfg,
+		svc:           svc,
+	}
 }
 
+// RemoteZone creates a Zone from an AWS Route53 Hosted Zone.
 func (r *Route53) RemoteZone() (Zone, error) {
 	var err error
 	r.Lock()
 	defer r.Unlock()
 	if r.ZoneID == "" {
-		r.ZoneID, err = zoneIdFromRoute53(r.Zone)
+		r.ZoneID, err = zoneIDFromRoute53(r.svc, r.Zone)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not retrieve remote zone")
 		}
 	}
 
-	return zoneFromRoute53(r.ZoneID)
+	return zoneFromRoute53(r.svc, r.ZoneID)
 }
 
+// UpdateZone updates a Route53 zone, removing the unwanted records, and
+// adding any unwanted records.
 func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
 	var err error
 	if r.ZoneID == "" {
-		r.ZoneID, err = zoneIdFromRoute53(r.Zone)
+		r.ZoneID, err = zoneIDFromRoute53(r.svc, r.Zone)
 		if err != nil {
 			return errors.Wrap(err, "could not update zone")
 		}
@@ -115,10 +132,7 @@ func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
 	return nil
 }
 
-func zoneIdFromRoute53(name string) (string, error) {
-	sess := session.Must(session.NewSession())
-	svc := route53.New(sess)
-
+func zoneIDFromRoute53(svc route53iface.Route53API, name string) (string, error) {
 	params := &route53.ListHostedZonesByNameInput{
 		DNSName:  aws.String(name),
 		MaxItems: aws.String("1"),
@@ -139,10 +153,7 @@ func zoneIdFromRoute53(name string) (string, error) {
 	return *resp.HostedZones[0].Id, nil
 }
 
-func zoneFromRoute53(zoneID string) (Zone, error) {
-	sess := session.Must(session.NewSession())
-	svc := route53.New(sess)
-
+func zoneFromRoute53(svc route53iface.Route53API, zoneID string) (Zone, error) {
 	var awsrecs []*route53.ResourceRecordSet
 	lrrsparams := &route53.ListResourceRecordSetsInput{HostedZoneId: aws.String(zoneID)}
 	// Example iterating over at most 3 pages of a ListResourceRecordSets operation.
