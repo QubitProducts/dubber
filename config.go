@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -108,7 +107,6 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 		ds = append(ds, Discoverer{
 			StatePuller:  d,
 			JSONTemplate: dcfg.Template,
-			EchoTo:       os.Stderr,
 		})
 	}
 
@@ -122,7 +120,6 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 		ds = append(ds, Discoverer{
 			StatePuller:  d,
 			JSONTemplate: dcfg.Template,
-			EchoTo:       os.Stderr,
 		})
 	}
 	return ds, nil

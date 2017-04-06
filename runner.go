@@ -16,8 +16,9 @@ package dubber
 
 import (
 	"context"
-	"log"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Run process the configuration, passing updates form discoverers,
@@ -56,7 +57,7 @@ func Run(ctx context.Context, cfg Config) error {
 				case <-ticker.C:
 					z, err := d.Discover(ctx)
 					if err != nil {
-						log.Println("error", err)
+						glog.Info("error", err)
 						return
 					}
 					upds <- update{i, z}
@@ -83,12 +84,12 @@ func Run(ctx context.Context, cfg Config) error {
 			for zn, newzone := range zones {
 				p, ok := provs[zn]
 				if !ok {
-					log.Printf("no provisioner for zone %q\n", zn)
+					glog.V(1).Infof("no provisioner for zone %q\n", zn)
 					continue
 				}
 				err := ReconcileZone(p, newzone, cfg.DryRun)
 				if err != nil {
-					log.Println(err.Error())
+					glog.Infof(err.Error())
 				}
 			}
 		}

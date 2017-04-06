@@ -16,11 +16,11 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 
 	"github.com/QubitProducts/dubber"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
@@ -51,12 +51,12 @@ var RootCmd = &cobra.Command{
 
 		r, err := os.Open(cfgFile)
 		if err != nil {
-			log.Fatalf("Unable to open config file %s, %v", cfgFile, err)
+			glog.Fatalf("Unable to open config file %s, %v", cfgFile, err)
 		}
 
 		cfg, err := dubber.FromYAML(r)
 		if err != nil {
-			log.Fatalf("Unable to read config, %v", err)
+			glog.Fatalf("Unable to read config, %v", err)
 		}
 
 		cfg.DryRun = dryrun
@@ -64,7 +64,7 @@ var RootCmd = &cobra.Command{
 
 		err = dubber.Run(ctx, cfg)
 		if err != nil {
-			log.Fatalf("run failed, %v", err)
+			glog.Fatalf("run failed, %v", err)
 		}
 
 		os.Exit(0)

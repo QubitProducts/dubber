@@ -19,11 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -43,7 +42,6 @@ type Discoverer struct {
 	StatePuller
 	State interface{}
 	JSONTemplate
-	EchoTo io.Writer
 }
 
 // Discover pulls the state from a StatePuller and renders the
@@ -59,10 +57,7 @@ func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 		return nil, errors.Wrap(err, "failed to render zone")
 	}
 
-	if d.EchoTo != nil {
-		log.Println("dumping output")
-		d.EchoTo.Write(buf.Bytes())
-	}
+	glog.V(1).Info("template output:\n", buf.String())
 
 	z, err := ParseZoneData(buf)
 	if err != nil {

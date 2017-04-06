@@ -16,9 +16,9 @@ package dubber
 
 import (
 	"fmt"
-	"log"
 	"sort"
 
+	"github.com/golang/glog"
 	"github.com/miekg/dns"
 )
 
@@ -75,7 +75,7 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	}
 
 	if len(allWanted) == 0 && len(allUnwanted) == 0 {
-		log.Println("nothing to do")
+		glog.V(1).Info("nothing to do")
 		return nil
 	}
 
@@ -92,8 +92,8 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	allUnwanted = append(allUnwanted, soarr)
 
 	if dryRun {
-		log.Println("Unwanted records to be removed:\n", allUnwanted)
-		log.Println("Wanted records to be added:\n", allWanted)
+		glog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
+		glog.V(1).Info("Wanted records to be added:\n", allWanted)
 		return nil
 	}
 

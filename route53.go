@@ -16,7 +16,6 @@ package dubber
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/golang/glog"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 )
@@ -67,9 +67,6 @@ func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
 		}
 	}
 
-	log.Println("wanted: ", wanted)
-	log.Println("unwanted: ", unwanted)
-
 	changes := route53.ChangeBatch{
 		Comment: aws.String(fmt.Sprintf("dubber did it... %s", time.Now())),
 	}
@@ -99,7 +96,7 @@ func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
 		changes.Changes = append(changes.Changes, &change)
 	}
 
-	log.Printf("Route53 Changes to %s: %s", r.ZoneID, changes)
+	glog.V(1).Infof("Route53 Changes to %s: %s", r.ZoneID, changes)
 
 	sess := session.Must(session.NewSession())
 	svc := route53.New(sess)
@@ -113,7 +110,7 @@ func (r *Route53) UpdateZone(wanted, unwanted Zone) error {
 		return err
 	}
 
-	log.Printf("Change succeeded: %s", out)
+	glog.V(1).Infof("Change succeeded:\n %s", out)
 
 	return nil
 }
@@ -189,7 +186,7 @@ func awsRRSToRecord(r53 *route53.ResourceRecordSet) (Zone, error) {
 		str := fmt.Sprintf("%s %d IN %s %s", *r53.Name, *r53.TTL, *r53.Type, *rr.Value)
 		drr, err := dns.NewRR(str)
 		if err != nil {
-			log.Println(err)
+			glog.Info("failed parsing record %q, %v", str, err)
 			continue
 		}
 
