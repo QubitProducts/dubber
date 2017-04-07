@@ -44,6 +44,8 @@ var RootCmd = &cobra.Command{
 	Long: `A tool for dynamically updating DNS providers based on applications
                 discovered from orchestration tools.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		goflag.CommandLine.Parse([]string{})
+
 		ctx, cancel := context.WithCancel(context.Background())
 		sigs := make(chan os.Signal)
 		signal.Notify(sigs, os.Interrupt)
