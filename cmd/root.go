@@ -23,28 +23,33 @@ import (
 	"github.com/QubitProducts/dubber"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
-
-func init() {
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
-	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
-	RootCmd.PersistentFlags().BoolVar(&oneshot, "onehot", false, "Do one run only and exit")
-	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-}
 
 var cfgFile = "dubber.yaml"
 var dryrun bool
 var oneshot bool
 
 // RootCmd is the main Cobra command for the dubber application
-var RootCmd = &cobra.Command{
-	Use:   "dubber",
-	Short: "dubber provisions DNS names for dynamic services",
-	Long: `A tool for dynamically updating DNS providers based on applications
+var RootCmd *cobra.Command
+
+func init() {
+	goflag.CommandLine.Set("alsologtostderr", "true")
+	RootCmd = &cobra.Command{
+		Use:   "dubber",
+		Short: "dubber provisions DNS names for dynamic services",
+		Long: `A tool for dynamically updating DNS providers based on applications
                 discovered from orchestration tools.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	}
+
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
+	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
+	RootCmd.PersistentFlags().BoolVar(&oneshot, "oneshot", false, "Do one run only and exit")
+	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
+	RootCmd.Run = func(cmd *cobra.Command, args []string) {
+		defer glog.Flush()
 		goflag.CommandLine.Parse([]string{})
+
+		glog.Info("Starting dubber")
 
 		ctx, cancel := context.WithCancel(context.Background())
 		sigs := make(chan os.Signal)
@@ -73,5 +78,5 @@ var RootCmd = &cobra.Command{
 		}
 
 		os.Exit(0)
-	},
+	}
 }
