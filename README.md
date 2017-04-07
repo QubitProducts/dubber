@@ -14,7 +14,7 @@ them.
 
 This state is then passed to user supplied templates
 ([text/template](https://godoc.org/text/template)
-with [github.com/Masterminds/sprig]()https://godoc.org/github.com/Masterminds/sprig) enabled).
+with [github.com/Masterminds/sprig](https://godoc.org/github.com/Masterminds/sprig)) enabled).
 
 Output of the template is parsed as  RFC 1035 Zone file content using
 [github.com/miekg](https://godoc.org/github.com/miekg).
