@@ -9,14 +9,15 @@ various sources.
 ## What Does Dubber Do?
 
 Dubber queries various sources of information (currently Marathon,
-of Kubernetes) for the state of tasks and services running within
+or Kubernetes) for the state of tasks and services running within
 them.
 
-This state is then passed to user supplied templates (text/template
-with https://godoc.org/github.com/Masterminds/sprig enabled).
+This state is then passed to user supplied templates
+([text/template](https://godoc.org/text/template)
+with [github.com/Masterminds/sprig]()https://godoc.org/github.com/Masterminds/sprig) enabled).
 
 Output of the template is parsed as  RFC 1035 Zone file content using
-https://godoc.org/github.com/miekg.
+[github.com/miekg](https://godoc.org/github.com/miekg).
 
 The resulting zone file is then passed to DNS provisioners (currently
 route53, gcloud DNS coming soon), which reconcile the provided zone
