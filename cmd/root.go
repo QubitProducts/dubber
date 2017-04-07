@@ -16,19 +16,21 @@ package cmd
 
 import (
 	"context"
+	goflag "flag"
 	"os"
 	"os/signal"
 
 	"github.com/QubitProducts/dubber"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
 	RootCmd.PersistentFlags().BoolVar(&oneshot, "onehot", false, "Do one run only and exit")
-	addAllFlagsToPFlagSet(RootCmd.PersistentFlags())
+	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
 var cfgFile = "dubber.yaml"
