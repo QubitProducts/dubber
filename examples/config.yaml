@@ -1,24 +1,22 @@
 discoverers:
   marathon:
     - endpoints:
-      -  http://marathon.mesos.stg.irl.aws.qutics.com/api
+      -  http://marathon.mesos.stg.irl.aws.examplg.com/api
       template: |
-        {{- $publicLB := "Z32O12XQLNTSW2:dualstack.traefik-staging-public-19452940.eu-west-1.elb.amazonaws.com."}}
-        {{- $privateLB := "Z32O12XQLNTSW2:dualstack.traefik-staging-private-19452940.eu-west-1.elb.amazonaws.com."}}
+        {{- $publicLB := "Z123456:public-123456.eu-west-1.elb.amazonaws.com."}}
+        {{- $privateLB := "Z123456:private-123457.eu-west-1.elb.amazonaws.com."}}
         {{- range .Applications }} 
-        {{- if (index .Labels "traefik.dnsName") }}
-        {{- if eq (index .Labels "traefik.externalAccess") "public" }}
-        {{ index .Labels "traefik.dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$publicLB}}
+        {{- if (index .Labels "dnsName") }}
+        {{- if eq (index .Labels "externalAccess") "public" }}
+        {{ index .Labels "dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$publicLB}}
         {{- else }}
-        {{ index .Labels "traefik.dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$privateLB}}
+        {{ index .Labels "dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$privateLB}}
         {{- end }}
         {{- end }}
         {{- end }}
 
 provisioners:
   route53:
-    - zone: qutics.com.
-      zoneid: Z39K8F8G3PARLC
-  cloudflare:
-    - zone: curlpipesh.it.
+    - zone: examplg.com.
+      zoneid: Z23456
 
