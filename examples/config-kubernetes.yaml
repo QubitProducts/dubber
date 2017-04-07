@@ -1,0 +1,43 @@
+# Example of a mixed config
+discoverers:
+  kubernetes:
+    - kubeconfig: ./kubeconfig.yaml
+      template: |
+        ; Rendered this
+        {{ $ingresses := .Ingresses }}
+        {{- range .Ingresses }} 
+        {{- range  .Status.LoadBalancer.Ingress }}
+        {{ $ip := .IP }}
+        {{- range $ingresses }}
+        {{- range .Spec.Rules }}
+        {{  .Host }}. 60 A {{ $ip  }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- range .Services }} 
+        {{- $svc := . }}
+        {{- range  .Status.LoadBalancer.Ingress }}
+        {{ $svc.Name }}.otherzone.com 60 A {{ .IP }}
+        {{- end }}
+        {{- end }}
+  marathon:
+    - endpoints:
+      -  http://marathon.example.com/api
+      template: |
+        {{- $publicLB := "Z1234:dualstack.public-190000.eu-west-1.elb.amazonaws.com."}}
+        {{- $privateLB := "Z1234:dualstack.private-190000.eu-west-1.elb.amazonaws.com."}}
+        {{- range .Applications }} 
+        {{- if (index .Labels "dnsName") }}
+        {{- if eq (index .Labels "externalAccess") "public" }}
+        {{ index .Labels "dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$publicLB}}
+        {{- else }}
+        {{ index .Labels "dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$privateLB}}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+provisioners:
+  route53:
+    - zone: example.com.
+    - zone: otherzone.com.
+
