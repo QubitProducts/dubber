@@ -17,8 +17,11 @@ package cmd
 import (
 	"context"
 	goflag "flag"
+	"net/http"
 	"os"
 	"os/signal"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/QubitProducts/dubber"
 	"github.com/golang/glog"
@@ -26,6 +29,7 @@ import (
 )
 
 var cfgFile = "dubber.yaml"
+var statsAddr = ":8080"
 var dryrun bool
 var oneshot bool
 
@@ -41,7 +45,8 @@ func init() {
                 discovered from orchestration tools.`,
 	}
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is dubber.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", cfgFile, "config file (default is dubber.yaml)")
+	RootCmd.PersistentFlags().StringVar(&statsAddr, "addr", statsAddr, "statistics endpoint")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
 	RootCmd.PersistentFlags().BoolVar(&oneshot, "oneshot", false, "Do one run only and exit")
 	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
@@ -59,6 +64,8 @@ func init() {
 			cancel()
 		}()
 
+		g, ctx := errgroup.WithContext(ctx)
+
 		r, err := os.Open(cfgFile)
 		if err != nil {
 			glog.Fatalf("Unable to open config file %s, %v", cfgFile, err)
@@ -72,11 +79,21 @@ func init() {
 		cfg.DryRun = dryrun
 		cfg.OneShot = oneshot
 
-		err = dubber.Run(ctx, cfg)
-		if err != nil {
-			glog.Fatalf("run failed, %v", err)
+		d := dubber.New(&cfg)
+
+		if statsAddr != "" {
+			g.Go(func() error {
+				return http.ListenAndServe(statsAddr, d)
+			})
 		}
 
+		g.Go(func() error {
+			return d.Run(ctx)
+		})
+
+		if err := g.Wait(); err != nil {
+			glog.Fatalf("%v", err)
+		}
 		os.Exit(0)
 	}
 }

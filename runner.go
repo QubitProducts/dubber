@@ -16,15 +16,55 @@ package dubber
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// Server wraps the configuration and basic functionality.
+type Server struct {
+	cfg *Config
+
+	*http.ServeMux
+	*prometheus.Registry
+}
+
+// New creates a new dubber server.
+func New(cfg *Config) *Server {
+	srv := &Server{
+		cfg:      cfg,
+		ServeMux: http.NewServeMux(),
+		Registry: prometheus.NewRegistry(),
+	}
+
+	cpuTemp := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "cpu_temperature_celsius",
+		Help: "Current temperature of the CPU.",
+	})
+	hdFailures := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "hd_errors_total",
+			Help: "Number of hard-disk errors.",
+		},
+		[]string{"device"},
+	)
+
+	srv.MustRegister(cpuTemp)
+	srv.MustRegister(hdFailures)
+
+	srv.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })
+	srv.Handle("/metrics", promhttp.HandlerFor(srv.Registry, promhttp.HandlerOpts{}))
+
+	return srv
+}
 
 // Run process the configuration, passing updates form discoverers,
 // managing state, and request action from provisioners.
-func Run(ctx context.Context, cfg Config) error {
-	provs, err := cfg.BuildProvisioners()
+func (srv *Server) Run(ctx context.Context) error {
+	provs, err := srv.cfg.BuildProvisioners()
 	if err != nil {
 		return err
 	}
@@ -34,7 +74,7 @@ func Run(ctx context.Context, cfg Config) error {
 		provisionZones = append(provisionZones, k)
 	}
 
-	ds, err := cfg.BuildDiscoveres()
+	ds, err := srv.cfg.BuildDiscoveres()
 	if err != nil {
 		return err
 	}
@@ -87,7 +127,7 @@ func Run(ctx context.Context, cfg Config) error {
 					glog.V(1).Infof("no provisioner for zone %q\n", zn)
 					continue
 				}
-				err := ReconcileZone(p, newzone, cfg.DryRun)
+				err := ReconcileZone(p, newzone, srv.cfg.DryRun)
 				if err != nil {
 					glog.Infof(err.Error())
 				}
