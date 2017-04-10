@@ -60,11 +60,13 @@ func init() {
 		sigs := make(chan os.Signal)
 		signal.Notify(sigs, os.Interrupt)
 		go func() {
-			<-sigs
+			sig := <-sigs
+			glog.Infof("Shutting down due to %v", sig)
 			cancel()
 		}()
 
-		g, ctx := errgroup.WithContext(ctx)
+		var g *errgroup.Group
+		g, ctx = errgroup.WithContext(ctx)
 
 		r, err := os.Open(cfgFile)
 		if err != nil {
@@ -83,17 +85,28 @@ func init() {
 
 		if statsAddr != "" {
 			g.Go(func() error {
-				return http.ListenAndServe(statsAddr, d)
+				if err := http.ListenAndServe(statsAddr, d); err != nil {
+					glog.Fatalf("stats service failed, %v", err)
+					return err
+				}
+				return nil
 			})
 		}
 
 		g.Go(func() error {
-			return d.Run(ctx)
+			if err := d.Run(ctx); err != nil {
+				glog.Fatalf("runner failed, %v", err)
+				return err
+			}
+			return nil
 		})
 
-		if err := g.Wait(); err != nil {
-			glog.Fatalf("%v", err)
+		<-ctx.Done()
+
+		if ctx.Err() != context.Canceled && ctx.Err() != nil {
+			glog.Fatalf("%v", ctx.Err())
 		}
+
 		os.Exit(0)
 	}
 }
