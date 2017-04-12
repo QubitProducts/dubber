@@ -30,6 +30,10 @@ type Server struct {
 
 	*http.ServeMux
 	*prometheus.Registry
+	MetricActiveDicoverers prometheus.Gauge
+	MetricDicovererRuns    *prometheus.CounterVec
+	MetricReconcileRuns    *prometheus.CounterVec
+	MetricReconcileTimes   *prometheus.HistogramVec
 }
 
 // New creates a new dubber server.
@@ -40,20 +44,30 @@ func New(cfg *Config) *Server {
 		Registry: prometheus.NewRegistry(),
 	}
 
-	cpuTemp := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "cpu_temperature_celsius",
-		Help: "Current temperature of the CPU.",
+	srv.MetricActiveDicoverers = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "dubber_active_discoverers",
+		Help: "Current running number of discoverers.",
 	})
-	hdFailures := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "hd_errors_total",
-			Help: "Number of hard-disk errors.",
-		},
-		[]string{"device"},
-	)
 
-	srv.MustRegister(cpuTemp)
-	srv.MustRegister(hdFailures)
+	srv.MetricDicovererRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "dubber_discoverer_runs_total",
+		Help: "Total count of discoverer runs.",
+	}, []string{"status"})
+
+	srv.MetricReconcileRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "dubber_reconcile_runs_total",
+		Help: "Total count of reconcile runs.",
+	}, []string{"status"})
+
+	srv.MetricReconcileTimes = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "dubber_reconcile_time_seconds",
+		Help: "Timings for reconcile runs",
+	}, []string{"status"})
+
+	srv.MustRegister(srv.MetricActiveDicoverers)
+	srv.MustRegister(srv.MetricDicovererRuns)
+	srv.MustRegister(srv.MetricReconcileRuns)
+	srv.MustRegister(srv.MetricReconcileTimes)
 
 	srv.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })
 	srv.Handle("/metrics", promhttp.HandlerFor(srv.Registry, promhttp.HandlerOpts{}))
@@ -88,6 +102,9 @@ func (srv *Server) Run(ctx context.Context) error {
 	// Launch the discoverers
 	for i, d := range ds {
 		go func(i int, d Discoverer) {
+			srv.MetricActiveDicoverers.Inc()
+			defer srv.MetricActiveDicoverers.Dec()
+
 			ticker := time.NewTicker(10 * time.Second)
 			defer ticker.Stop()
 			for {
@@ -95,6 +112,7 @@ func (srv *Server) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
+					srv.MetricDicovererRuns.With(prometheus.Labels{}).Inc()
 					z, err := d.Discover(ctx)
 					if err != nil {
 						glog.Info("error", err)
@@ -127,10 +145,12 @@ func (srv *Server) Run(ctx context.Context) error {
 					glog.V(1).Infof("no provisioner for zone %q\n", zn)
 					continue
 				}
-				err := ReconcileZone(p, newzone, srv.cfg.DryRun)
-				if err != nil {
+				if err := srv.ReconcileZone(p, newzone); err != nil {
 					glog.Infof(err.Error())
+					srv.MetricReconcileRuns.With(prometheus.Labels{"status": "failed"}).Inc()
+					continue
 				}
+				srv.MetricReconcileRuns.With(prometheus.Labels{"sstatus": "uccess"}).Inc()
 			}
 		}
 	}

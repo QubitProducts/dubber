@@ -87,7 +87,12 @@ func (cfg Config) BuildProvisioners() (map[string]Provisioner, error) {
 		dom := pcfg.Zone
 		prv := NewRoute53(pcfg)
 		if _, ok := prvs[dom]; ok {
+			// We should actually allow this.
 			return nil, fmt.Errorf("zone %q managed by multiple provisioners", dom)
+		}
+		if cfg.DryRun {
+			prvs[dom] = dryRunProvisioner{prv}
+			continue
 		}
 		prvs[dom] = prv
 	}

@@ -43,7 +43,7 @@ type Provisioner interface {
 //   remote zone, but not in the desired zone are removed.
 // - Records of a given "Name, Type , Class" combination that are in the
 //   desired zone, nit not in the remote zone are added.
-func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
+func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	dgroups := desired.Group()
 
 	remz, err := p.RemoteZone()
@@ -107,11 +107,19 @@ func ReconcileZone(p Provisioner, desired Zone, dryRun bool) error {
 	allWanted = append(allWanted, &Record{RR: &newsoa})
 	allUnwanted = append(allUnwanted, soarr)
 
-	if dryRun {
-		glog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
-		glog.V(1).Info("Wanted records to be added:\n", allWanted)
-		return nil
-	}
-
 	return p.UpdateZone(allWanted, allUnwanted)
+}
+
+type dryRunProvisioner struct {
+	real Provisioner
+}
+
+func (p dryRunProvisioner) RemoteZone() (Zone, error) {
+	return p.real.RemoteZone()
+}
+
+func (p dryRunProvisioner) UpdateZone(remove, add Zone) error {
+	glog.V(1).Info("Unwanted records to be removed:\n", remove)
+	glog.V(1).Info("Wanted records to be added:\n", add)
+	return nil
 }
