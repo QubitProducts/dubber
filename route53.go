@@ -40,6 +40,12 @@ type Route53Config struct {
 }
 
 // Route53 is an AWS Route53 DNS record provisioner.
+// This provision uses the following flags:
+// - route53.SetID: Associate these records with a Set
+// - route53.Weight: Set a weight for the set
+// - route53.Alias: "HOSTEDZONEID:ALIASNAME"
+// - route53.EvaluateTargetHealth: "true" will enable target health evaluation
+//   on an alias
 type Route53 struct {
 	svc route53iface.Route53API
 	sync.Mutex
@@ -212,7 +218,13 @@ func awsRRSToRecord(r53 *route53.ResourceRecordSet) (Zone, error) {
 		}
 		flags["route53.Alias"] = *r53.AliasTarget.HostedZoneId + ":" + *r53.AliasTarget.DNSName
 
+		flags["route53.EvaluateTargetHealth"] = "false"
+		if r53.AliasTarget.EvaluateTargetHealth != nil && *r53.AliasTarget.EvaluateTargetHealth {
+			flags["route53.EvaluateTargetHealth"] = "true"
+		}
+
 		res = append(res, &Record{RR: drr, Flags: flags})
+
 	}
 	return res, err
 }
@@ -226,6 +238,11 @@ func recordToAWSRRS(r *Record) (*route53.ResourceRecordSet, error) {
 	}
 	r53.Type = aws.String(rrtype)
 
+	var evalTargetHealth bool
+	if evthStr, ok := r.Flags["route53.EvalTargetHealth"]; ok && evthStr == "true" {
+		evalTargetHealth = true
+	}
+
 	if aliasStr, ok := r.Flags["route53.Alias"]; ok {
 		aliasStrs := strings.SplitN(aliasStr, ":", 2)
 		if len(aliasStrs) != 2 {
@@ -236,7 +253,7 @@ func recordToAWSRRS(r *Record) (*route53.ResourceRecordSet, error) {
 		r53.AliasTarget = &route53.AliasTarget{
 			HostedZoneId:         aws.String(aliasZone),
 			DNSName:              aws.String(aliasName),
-			EvaluateTargetHealth: aws.Bool(false),
+			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	}
 
