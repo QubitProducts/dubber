@@ -62,7 +62,7 @@ func New(cfg *Config) *Server {
 	srv.MetricReconcileTimes = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "dubber_reconcile_time_seconds",
 		Help: "Timings for reconcile runs",
-	}, []string{"status"})
+	}, []string{"zone"})
 
 	srv.MustRegister(srv.MetricActiveDicoverers)
 	srv.MustRegister(srv.MetricDicovererRuns)
@@ -145,12 +145,19 @@ func (srv *Server) Run(ctx context.Context) error {
 					glog.V(1).Infof("no provisioner for zone %q\n", zn)
 					continue
 				}
-				if err := srv.ReconcileZone(p, newzone); err != nil {
-					glog.Infof(err.Error())
-					srv.MetricReconcileRuns.With(prometheus.Labels{"status": "failed"}).Inc()
-					continue
-				}
-				srv.MetricReconcileRuns.With(prometheus.Labels{"sstatus": "uccess"}).Inc()
+				func() {
+					timer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
+						srv.MetricReconcileTimes.With(prometheus.Labels{"zone": zn}).Observe(v)
+					}))
+					defer timer.ObserveDuration()
+
+					if err := srv.ReconcileZone(p, newzone); err != nil {
+						glog.Infof(err.Error())
+						srv.MetricReconcileRuns.With(prometheus.Labels{"status": "failed"}).Inc()
+						return
+					}
+					srv.MetricReconcileRuns.With(prometheus.Labels{"sstatus": "success"}).Inc()
+				}()
 			}
 		}
 	}
