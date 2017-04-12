@@ -31,7 +31,7 @@ type Server struct {
 	*http.ServeMux
 	*prometheus.Registry
 	MetricActiveDicoverers prometheus.Gauge
-	MetricDicovererRuns    *prometheus.CounterVec
+	MetricDiscovererRuns   *prometheus.CounterVec
 	MetricReconcileRuns    *prometheus.CounterVec
 	MetricReconcileTimes   *prometheus.HistogramVec
 }
@@ -49,7 +49,7 @@ func New(cfg *Config) *Server {
 		Help: "Current running number of discoverers.",
 	})
 
-	srv.MetricDicovererRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
+	srv.MetricDiscovererRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "dubber_discoverer_runs_total",
 		Help: "Total count of discoverer runs.",
 	}, []string{"status"})
@@ -65,7 +65,7 @@ func New(cfg *Config) *Server {
 	}, []string{"zone"})
 
 	srv.MustRegister(srv.MetricActiveDicoverers)
-	srv.MustRegister(srv.MetricDicovererRuns)
+	srv.MustRegister(srv.MetricDiscovererRuns)
 	srv.MustRegister(srv.MetricReconcileRuns)
 	srv.MustRegister(srv.MetricReconcileTimes)
 
@@ -112,12 +112,13 @@ func (srv *Server) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					srv.MetricDicovererRuns.With(prometheus.Labels{}).Inc()
 					z, err := d.Discover(ctx)
 					if err != nil {
 						glog.Info("error", err)
+						srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 						return
 					}
+					srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "success"}).Inc()
 					upds <- update{i, z}
 				}
 			}
@@ -156,7 +157,7 @@ func (srv *Server) Run(ctx context.Context) error {
 						srv.MetricReconcileRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 						return
 					}
-					srv.MetricReconcileRuns.With(prometheus.Labels{"sstatus": "success"}).Inc()
+					srv.MetricReconcileRuns.With(prometheus.Labels{"status": "success"}).Inc()
 				}()
 			}
 		}
