@@ -44,7 +44,7 @@ type Route53Config struct {
 // - route53.SetID: Associate these records with a Set
 // - route53.Weight: Set a weight for the set
 // - route53.Alias: "HOSTEDZONEID:ALIASNAME"
-// - route53.EvaluateTargetHealth: "true" will enable target health evaluation
+// - route53.EvalTargetHealth: "true" will enable target health evaluation
 //   on an alias
 type Route53 struct {
 	svc route53iface.Route53API
@@ -218,9 +218,8 @@ func awsRRSToRecord(r53 *route53.ResourceRecordSet) (Zone, error) {
 		}
 		flags["route53.Alias"] = *r53.AliasTarget.HostedZoneId + ":" + *r53.AliasTarget.DNSName
 
-		flags["route53.EvaluateTargetHealth"] = "false"
 		if r53.AliasTarget.EvaluateTargetHealth != nil && *r53.AliasTarget.EvaluateTargetHealth {
-			flags["route53.EvaluateTargetHealth"] = "true"
+			flags["route53.EvalTargetHealth"] = "true"
 		}
 
 		res = append(res, &Record{RR: drr, Flags: flags})
