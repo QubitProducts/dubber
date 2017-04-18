@@ -36,7 +36,7 @@ type Provisioner interface {
 
 // ReconcileZone attempts to ensure that the set of records in the desired
 // zone are pressent in the Provisioners zone.
-// - Records are grouped by Name, Type ad Class.
+// - Records are grouped by Name.
 // - Records from the provisioner that are not listed in the desired set
 //   are ignored.
 // - Records of a given "Name, Type , Class" combination that are in the
@@ -44,32 +44,28 @@ type Provisioner interface {
 // - Records of a given "Name, Type , Class" combination that are in the
 //   desired zone, nit not in the remote zone are added.
 func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
-	dgroups := desired.Group()
-
 	remz, err := p.RemoteZone()
 	if err != nil {
 		return err
 	}
 
-	rgroups := remz.Group()
-
 	var soarr *Record
-	for rgroupKey, rgroup := range rgroups {
-		if rgroupKey.Rrtype != dns.TypeSOA {
+	for _, rr := range remz {
+		if rr.RR.Header().Rrtype != dns.TypeSOA {
 			continue
 		}
-		if soarr != nil || len(rgroup) > 1 {
-			return fmt.Errorf("multople SOA records found")
+		if soarr != nil {
+			return fmt.Errorf("multiple SOA records found")
 		}
-		if len(rgroup) != 1 {
-			return fmt.Errorf("invalid group fp SOA records, must have exactly one record, got %v", rgroup)
-		}
-		soarr = rgroup[0]
+		soarr = rr
 	}
 
 	if soarr == nil {
 		return fmt.Errorf("no SOA records found")
 	}
+
+	dgroups := desired.Group()
+	rgroups := remz.Group()
 
 	var allWanted, allUnwanted Zone
 	for dgroupKey, dgroup := range dgroups {

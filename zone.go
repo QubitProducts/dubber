@@ -408,9 +408,9 @@ func (z Zone) Group() map[RecordSetKey]Zone {
 
 	for _, rr := range z {
 		k := RecordSetKey{
-			Name:   rr.Header().Name,
-			Class:  rr.Header().Class,
-			Rrtype: rr.Header().Rrtype,
+			Name: rr.Header().Name,
+			//			Class:  rr.Header().Class,
+			//			Rrtype: rr.Header().Rrtype,
 		}
 		rz := res[k]
 		rz = append(rz, rr)
