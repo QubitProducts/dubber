@@ -116,7 +116,6 @@ func (srv *Server) Run(ctx context.Context) error {
 					if err != nil {
 						glog.Info("error", err)
 						srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "failed"}).Inc()
-						return
 					}
 					srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "success"}).Inc()
 					upds <- update{i, z}
