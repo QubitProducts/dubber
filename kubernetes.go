@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -30,16 +31,17 @@ import (
 type KubernetesConfig struct {
 	BaseDiscovererConfig `json:",omitempty" yaml:",omitempty,inline"`
 	FileName             string `json:"kubeconfig" yaml:"kubeconfig"`
+	Context              string `json:"context" yaml:"context"`
 	XXX                  `json:",omitempty" yaml:",omitempty,inline"`
 }
 
 // KubernetesState holds the state information we will pass to the configuration
 // template.
 type KubernetesState struct {
-	Nodes     []v1.Node
-	Ingresses []v1beta1.Ingress
-	Services  []v1.Service
-	Endpoints []v1.Endpoints
+	Nodes     map[string]v1.Node
+	Ingresses map[string]v1beta1.Ingress
+	Services  map[string]v1.Service
+	Endpoints map[string]v1.Endpoints
 }
 
 // Kubernetes implements discovery of applications and
@@ -53,10 +55,19 @@ type Kubernetes struct {
 
 // NewKubernetes creates a new marathon discoverer
 func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.FileName)
+	var err error
+	var config *rest.Config
+
+	if cfg.FileName != "" {
+		config, err = clientcmd.BuildConfigFromFlags(cfg.Context, cfg.FileName)
+	} else {
+		config, err = rest.InClusterConfig()
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	// for now
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
@@ -75,28 +86,46 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	m.Lock()
 	m.Unlock()
 
-	nodesL, err := m.Clientset.Nodes().List(metav1.ListOptions{})
+	nodesM := map[string]v1.Node{}
+	nodesL, err := m.Clientset.Nodes().List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
+	}
+	for _, n := range nodesL.Items {
+		nodesM[n.ObjectMeta.Name] = n
 	}
 
-	ingsL, err := m.Clientset.Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
+	ingsM := map[string]v1beta1.Ingress{}
+	ingsL, err := m.Clientset.Ingresses(metav1.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	svcsL, err := m.Clientset.Services(metav1.NamespaceAll).List(metav1.ListOptions{})
+	for _, i := range ingsL.Items {
+		ingsM[i.ObjectMeta.Name] = i
+	}
+
+	svcsM := map[string]v1.Service{}
+	svcsL, err := m.Clientset.Services(metav1.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	epsL, err := m.Clientset.Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
+	for _, s := range svcsL.Items {
+		svcsM[s.ObjectMeta.Name] = s
+	}
+
+	epsM := map[string]v1.Endpoints{}
+	epsL, err := m.Clientset.Endpoints(metav1.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
+	}
+	for _, e := range epsL.Items {
+		epsM[e.ObjectMeta.Name] = e
 	}
 
 	return &KubernetesState{
-		Nodes:     nodesL.Items,
-		Ingresses: ingsL.Items,
-		Services:  svcsL.Items,
-		Endpoints: epsL.Items,
+		Nodes:     nodesM,
+		Ingresses: ingsM,
+		Services:  svcsM,
+		Endpoints: epsM,
 	}, nil
 }

@@ -51,6 +51,9 @@ func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to pull state")
 	}
+
+	glog.V(2).Infof("template state input: %#v\n", state)
+
 	buf := &bytes.Buffer{}
 	err = d.Execute(buf, state)
 	if err != nil {
