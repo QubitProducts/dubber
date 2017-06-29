@@ -105,13 +105,13 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 	var ds []Discoverer
 	for i := range cfg.Discoverers.Marathon {
 		dcfg := cfg.Discoverers.Marathon[i]
+		if dcfg.Disabled {
+			continue
+		}
+
 		d, err := NewMarathon(dcfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "building marathon Discoverer failed")
-		}
-
-		if dcfg.Disabled {
-			continue
 		}
 
 		ds = append(ds, Discoverer{
@@ -122,13 +122,13 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 
 	for i := range cfg.Discoverers.Kubernetes {
 		dcfg := cfg.Discoverers.Kubernetes[i]
+		if dcfg.Disabled {
+			continue
+		}
+
 		d, err := NewKubernetes(dcfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kubernetes Discoverer failed")
-		}
-
-		if dcfg.Disabled {
-			continue
 		}
 
 		ds = append(ds, Discoverer{
