@@ -18,6 +18,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/golang/glog"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
@@ -59,8 +61,19 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 	var config *rest.Config
 
 	if cfg.FileName != "" {
-		config, err = clientcmd.BuildConfigFromFlags(cfg.Context, cfg.FileName)
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{CurrentContext: cfg.Context}
+
+		if cfg.Context != "" {
+			glog.Infof("Building kube client for context %q from %s", cfg.Context, cfg.FileName)
+		} else {
+			glog.Infof("Building kube client for default context  from %s", cfg.FileName)
+		}
+
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+		config, err = kubeConfig.ClientConfig()
 	} else {
+		glog.Info("Building in-cluster kube client")
 		config, err = rest.InClusterConfig()
 	}
 
