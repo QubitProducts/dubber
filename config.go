@@ -27,6 +27,7 @@ import (
 
 // BaseDiscovererConfig is configuration common to all discoverers
 type BaseDiscovererConfig struct {
+	Disabled bool         `yaml:"disabled" json:"disabled"`
 	Template JSONTemplate `yaml:"template" json:"template"`
 }
 
@@ -109,6 +110,10 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 			return nil, errors.Wrap(err, "building marathon Discoverer failed")
 		}
 
+		if dcfg.Disabled {
+			continue
+		}
+
 		ds = append(ds, Discoverer{
 			StatePuller:  d,
 			JSONTemplate: dcfg.Template,
@@ -120,6 +125,10 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 		d, err := NewKubernetes(dcfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kubernetes Discoverer failed")
+		}
+
+		if dcfg.Disabled {
+			continue
 		}
 
 		ds = append(ds, Discoverer{
