@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -49,8 +50,9 @@ type Config struct {
 
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
 
-	DryRun  bool `json:"-"  yaml:"-"`
-	OneShot bool `json:"-"  yaml:"-"`
+	DryRun       bool          `json:"-"  yaml:"-"`
+	OneShot      bool          `json:"-"  yaml:"-"`
+	PollInterval time.Duration `json:"-"  yaml:"-"`
 }
 
 // FromYAML creates a dubber config from a YAML config file

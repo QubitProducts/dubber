@@ -105,7 +105,7 @@ func (srv *Server) Run(ctx context.Context) error {
 			srv.MetricActiveDicoverers.Inc()
 			defer srv.MetricActiveDicoverers.Dec()
 
-			ticker := time.NewTicker(10 * time.Second)
+			ticker := time.NewTicker(srv.cfg.PollInterval)
 			defer ticker.Stop()
 			for {
 				select {

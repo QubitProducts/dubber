@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 
@@ -32,6 +33,7 @@ var cfgFile = "dubber.yaml"
 var statsAddr = ":8080"
 var dryrun bool
 var oneshot bool
+var pollInterval time.Duration
 
 // RootCmd is the main Cobra command for the dubber application
 var RootCmd *cobra.Command
@@ -49,6 +51,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&statsAddr, "addr", statsAddr, "statistics endpoint")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
 	RootCmd.PersistentFlags().BoolVar(&oneshot, "oneshot", false, "Do one run only and exit")
+	RootCmd.PersistentFlags().DurationVar(&pollInterval, "poll.interval", time.Minute*1, "How often to poll and check for updates")
 	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
 	RootCmd.Run = func(cmd *cobra.Command, args []string) {
 		defer glog.Flush()
@@ -80,6 +83,7 @@ func init() {
 
 		cfg.DryRun = dryrun
 		cfg.OneShot = oneshot
+		cfg.PollInterval = pollInterval
 
 		d := dubber.New(&cfg)
 
