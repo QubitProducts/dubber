@@ -3,3 +3,5 @@
 {"timestamp":"1503520649","author":"tcolgate@gmail.com","location":{"commit":"c0c656476c02fa1daebf25fa45b0989631fa4bf0","path":"README.md","range":{"startLine":29}},"description":"This could be better"}
 
 {"timestamp":"1503521643","author":"tcolgate@gmail.com","parent":"d019345f108962cfed458ea93c8124c57570ce22","location":{"commit":"c0c656476c02fa1daebf25fa45b0989631fa4bf0"},"description":"Stuff\n\n","resolved":true}
+
+{"timestamp":"1503521816","author":"tcolgate@gmail.com","parent":"26f62cc25743d9b99a2b20ab5c2ec0a47d88664d","location":{"commit":"c0c656476c02fa1daebf25fa45b0989631fa4bf0"},"description":"All good\n","resolved":true}
