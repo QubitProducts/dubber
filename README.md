@@ -24,7 +24,7 @@ route53, gcloud DNS coming soon), which reconcile the provided zone
 content with the running zone.
 
 Template can use the comments on a DNS record to pass hints to the
-provisioner. 
+provisioner.
 
 At present it will only manage records that discoveres find, selective
 purging of records may be available in future.
@@ -39,7 +39,7 @@ discoverers:
       template: |
         {{- $publicLB := "Z1234:dualstack.exanple-public.elb.amazonaws.com."}}
         {{- $privateLB := "Z1234:dualstack.exanple-private.elb.amazonaws.com."}}
-        {{- range .Applications }} 
+        {{- range .Applications }}
         {{- if (index .Labels "dnsName") }}
         {{- if eq (index .Labels "externalAccess") "public" }}
         {{ index .Labels "dnsName"}} 0 A 0.0.0.0 ; route53.Alias={{$publicLB}}
