@@ -137,7 +137,9 @@ func (srv *Server) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case up := <-upds:
-			dzones[up.i] = up.z
+			newzone := up.z
+
+			dzones[up.i] = newzone
 
 			var fullZone Zone
 			for i := range dzones {

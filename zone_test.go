@@ -193,3 +193,23 @@ thing.example.com. 10 IN A 3.3.3.3`,
 		})
 	}
 }
+
+func TestZone_AddState(t *testing.T) {
+	var z1 = `
+thing.example.com 10 AAAA 2001:4860:4860::8888
+thing2.example.com 10 IN A 8.8.8.8 ; comment=1 aws.Route53.alias=mything
+`
+	//	var z2 = ""
+
+	z, err := ParseZoneData(bytes.NewBuffer([]byte(z1)))
+	if err != nil {
+		t.Fatalf("expected no errors while parsing, got errs = %v", err)
+	}
+
+	sz, err := z.AddState("au-west-1")
+	if err != nil {
+		t.Fatalf("expected no errors while adding state, got errs = %v", err)
+	}
+
+	t.Logf("zone: %s", sz)
+}
