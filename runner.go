@@ -30,10 +30,11 @@ type Server struct {
 
 	*http.ServeMux
 	*prometheus.Registry
-	MetricActiveDicoverers prometheus.Gauge
-	MetricDiscovererRuns   *prometheus.CounterVec
-	MetricReconcileRuns    *prometheus.CounterVec
-	MetricReconcileTimes   *prometheus.HistogramVec
+	MetricActiveDicoverers     prometheus.Gauge
+	MetricDiscovererRuns       *prometheus.CounterVec
+	MetricDiscovererZoneSerial *prometheus.GaugeVec
+	MetricReconcileRuns        *prometheus.CounterVec
+	MetricReconcileTimes       *prometheus.HistogramVec
 }
 
 // New creates a new dubber server.
@@ -54,6 +55,11 @@ func New(cfg *Config) *Server {
 		Help: "Total count of discoverer runs.",
 	}, []string{"status"})
 
+	srv.MetricDiscovererZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "dubber_discoverer_zone_serial",
+		Help: "Zone serial numbers as discoverd from sources.",
+	}, []string{"zone"})
+
 	srv.MetricReconcileRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "dubber_reconcile_runs_total",
 		Help: "Total count of reconcile runs.",
@@ -66,6 +72,7 @@ func New(cfg *Config) *Server {
 
 	srv.MustRegister(srv.MetricActiveDicoverers)
 	srv.MustRegister(srv.MetricDiscovererRuns)
+	srv.MustRegister(srv.MetricDiscovererZoneSerial)
 	srv.MustRegister(srv.MetricReconcileRuns)
 	srv.MustRegister(srv.MetricReconcileTimes)
 

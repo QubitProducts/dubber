@@ -20,10 +20,10 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -100,7 +100,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	m.Unlock()
 
 	nodesM := map[string]v1.Node{}
-	nodesL, err := m.Clientset.Nodes().List(metav1.ListOptions{})
+	nodesL, err := m.Core().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	ingsM := map[string]v1beta1.Ingress{}
-	ingsL, err := m.Clientset.Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
+	ingsL, err := m.Extensions().Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	svcsM := map[string]v1.Service{}
-	svcsL, err := m.Clientset.Services(metav1.NamespaceAll).List(metav1.ListOptions{})
+	svcsL, err := m.Core().Services(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	epsM := map[string]v1.Endpoints{}
-	epsL, err := m.Clientset.Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
+	epsL, err := m.Core().Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

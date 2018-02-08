@@ -12,13 +12,13 @@ import (
 func TestZoneDedupe(t *testing.T) {
 	var z1 = `
 ; comment is ignored
-thing.example.com 10 AAAA 2001:4860:4860::8888
-thing2.example.com 10 IN A 8.8.8.8 ; comment=1 aws.Route53.alias=mything
-thing2.example.com 10 IN A 8.8.8.8
-thing.example.com 10 IN A 8.8.8.8 ; comment=1
-thing.example.com 10 IN A 8.8.8.8 ; comment=1
-thing.example.com 10 IN A 8.8.8.8 ; comment=2
-thing.example.com 10 IN A 9.9.9.9 ; comment=3
+thing.example.com. 10 AAAA 2001:4860:4860::8888
+thing2.example.com. 10 IN A 8.8.8.8 ; comment=1 aws.Route53.alias=mything
+thing2.example.com. 10 IN A 8.8.8.8
+thing.example.com. 10 IN A 8.8.8.8 ; comment=1
+thing.example.com. 10 IN A 8.8.8.8 ; comment=1
+thing.example.com. 10 IN A 8.8.8.8 ; comment=2
+thing.example.com. 10 IN A 9.9.9.9 ; comment=3
 `
 
 	var z2 = `thing.example.com.	10	IN	A	8.8.8.8 ; comment=1

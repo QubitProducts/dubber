@@ -97,6 +97,7 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 		return fmt.Errorf("unable to cast dns.RR %q to SOA record", soa)
 	}
 
+	srv.MetricDiscovererZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
 	newsoa := *soa
 	newsoa.Serial++
 
