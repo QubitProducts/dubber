@@ -422,13 +422,14 @@ func (z Zone) Group() map[RecordSetKey]Zone {
 
 // StateRecord generates a new record that can be used to
 // identify this record as being owned by this dubber
-func StateRecord(r *Record, id string) (*Record, error) {
+func StateRecord(r *Record, prefix, id string) (*Record, error) {
 	rr, err := dns.NewRR(fmt.Sprintf(
-		`_%v._%v._dubber_%s.%s TXT "something HMACy"`,
+		`%s._%v._%v.%s TXT "id=%q hmac=SOMETHING"`,
+		prefix,
 		r.Header().Class,
 		r.Header().Rrtype,
-		id,
-		r.Header().Name))
+		r.Header().Name,
+		id))
 	if err != nil {
 		return nil, err
 	}
@@ -436,11 +437,11 @@ func StateRecord(r *Record, id string) (*Record, error) {
 }
 
 // AddState adds dubber state TXT records to a zone.
-func (z Zone) AddState(id string) (Zone, error) {
+func (z Zone) AddState(prefix, id string) (Zone, error) {
 	var result Zone
 	for i := range z {
 		result = append(result, z[i])
-		sr, err := StateRecord(z[i], id)
+		sr, err := StateRecord(z[i], prefix, id)
 		if err != nil {
 			return nil, err
 		}
@@ -448,5 +449,11 @@ func (z Zone) AddState(id string) (Zone, error) {
 		result = append(result, sr)
 	}
 
+	return result, nil
+}
+
+// ParseState
+func (z Zone) ParseState(prefix, id string) (Zone, error) {
+	var result Zone
 	return result, nil
 }
