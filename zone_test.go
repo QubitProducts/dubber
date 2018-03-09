@@ -159,7 +159,15 @@ thing.example.com. 10 IN A 3.3.3.3`,
 thing.example.com. 10 IN A 3.3.3.3`,
 			``,
 		},
-	}
+		{
+			`thing.example.com. 10 IN A 1.1.1.1 ; aws.Route53.Weight=100
+`,
+			`thing.example.com. 10 IN A 2.2.2.2 ; aws.Route53.Weight=200
+`,
+			`thing.example.com. 10 IN A 1.1.1.1 ; aws.Route53.Weight=100`,
+			``,
+			`thing.example.com. 10 IN A 2.2.2.2 ; aws.Route53.Weight=200`,
+		}}
 
 	for i, st := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
