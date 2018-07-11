@@ -216,7 +216,7 @@ func ParseZoneData(r io.Reader) (Zone, error) {
 	var errs []error
 	var z Zone
 
-	for t := range dns.ParseZone(r, "", "") {
+	for t := range dns.ParseZone(r, ".", "") {
 		if t.Error != nil {
 			errs = append(errs, t.Error)
 			continue

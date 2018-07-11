@@ -7,12 +7,17 @@
   version = "0.7.1"
 
 [[constraint]]
+  name = "github.com/prometheus/client_golang"
+  revision = "ee1c9d7e23df7f011bdf6f12a5c9e7f0ae10a1fe"
+
+[[constraint]]
   branch = "master"
   name = "github.com/golang/glog"
 
 [[constraint]]
   name = "github.com/miekg/dns"
-  version = "1.0.4"
+  branch = "master"
+#  version = "1.0.4"
 
 [[constraint]]
   name = "github.com/pkg/errors"
