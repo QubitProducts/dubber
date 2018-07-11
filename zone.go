@@ -395,22 +395,32 @@ func (z Zone) FindSet(name string, class uint16, rrtype uint16) Zone {
 	return nz
 }
 
-// RecordSetKey is used to group records by name, type and class
+// RecordSetKey is used to group records by name, type and class, along
+// with any grouping keys.
 type RecordSetKey struct {
-	Name   string
-	Class  uint16
-	Rrtype uint16
+	Name       string
+	Class      uint16
+	Rrtype     uint16
+	GroupFlags string
 }
 
-// Group all the records by Name,Class and Type
-func (z Zone) Group() map[RecordSetKey]Zone {
+// Group all the records by Name,Class and Type, and a set of
+// grouping flags.
+func (z Zone) Group(groupFlags []string) map[RecordSetKey]Zone {
 	res := map[RecordSetKey]Zone{}
 
 	for _, rr := range z {
+		var flags []string
+		for _, f := range groupFlags {
+			if v, ok := rr.Flags[f]; ok {
+				flags = append(flags, fmt.Sprintf("%s=%q", f, v))
+			}
+		}
 		k := RecordSetKey{
-			Name: rr.Header().Name,
-			//			Class:  rr.Header().Class,
-			//			Rrtype: rr.Header().Rrtype,
+			Name:       rr.Header().Name,
+			Class:      rr.Header().Class,
+			Rrtype:     rr.Header().Rrtype,
+			GroupFlags: strings.Join(flags, " "),
 		}
 		rz := res[k]
 		rz = append(rz, rr)

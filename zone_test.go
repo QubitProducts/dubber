@@ -167,7 +167,8 @@ thing.example.com. 10 IN A 3.3.3.3`,
 			`thing.example.com. 10 IN A 1.1.1.1 ; aws.Route53.Weight=100`,
 			``,
 			`thing.example.com. 10 IN A 2.2.2.2 ; aws.Route53.Weight=200`,
-		}}
+		},
+	}
 
 	for i, st := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -197,6 +198,56 @@ thing.example.com. 10 IN A 3.3.3.3`,
 			grzstr := strings.Replace(rz.String(), "\t", " ", -1)
 			if grzstr != st.rz {
 				t.Fatalf("got rz: %v\nwanted: %v", grzstr, st.rz)
+			}
+		})
+	}
+}
+
+func TestZoneGroup(t *testing.T) {
+	var test = []struct {
+		z    string
+		keys []string
+		exp  []string
+	}{
+		{
+			`thing.example.com. 10 IN A 1.1.1.1
+thing.example.com. 10 IN A 2.2.2.2
+thing.example.com. 10 IN A 3.3.3.3`,
+			[]string{"route53.SetID"},
+			[]string{
+				`thing.example.com.	10	IN	A	1.1.1.1
+thing.example.com.	10	IN	A	2.2.2.2
+thing.example.com.	10	IN	A	3.3.3.3`},
+		},
+		{
+			`thing.example.com. 10 IN A 1.1.1.1; route53.SetID=set1
+thing.example.com. 10 IN A 2.2.2.2; route53.SetID=set2
+thing.example.com. 10 IN A 3.3.3.3; route53.SetID=set2
+`,
+			[]string{"route53.SetID"},
+			[]string{
+				`thing.example.com.	10	IN	A	1.1.1.1 ; route53.SetID=set1`,
+				`thing.example.com.	10	IN	A	2.2.2.2 ; route53.SetID=set2
+thing.example.com.	10	IN	A	3.3.3.3 ; route53.SetID=set2`},
+		},
+	}
+
+	for i, st := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			z, err := ParseZoneData(bytes.NewBuffer([]byte(st.z)))
+			if err != nil {
+				t.Fatalf("expected no errors while parsing, got errs = %v", err)
+			}
+
+			sort.Sort(ByRR(z))
+
+			gs := z.Group(st.keys)
+			var zs []string
+			for _, g := range gs {
+				zs = append(zs, g.String())
+			}
+			if !reflect.DeepEqual(st.exp, zs) {
+				t.Fatalf("  expected: %#v\n  got: %#v", st.exp, zs)
 			}
 		})
 	}

@@ -32,6 +32,7 @@ import (
 type Provisioner interface {
 	RemoteZone() (Zone, error)
 	UpdateZone(remove, add Zone) error
+	GroupFlags() []string
 }
 
 // ReconcileZone attempts to ensure that the set of records in the desired
@@ -64,8 +65,8 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 		return fmt.Errorf("no SOA records found")
 	}
 
-	dgroups := desired.Group()
-	rgroups := remz.Group()
+	dgroups := desired.Group(p.GroupFlags())
+	rgroups := remz.Group(p.GroupFlags())
 
 	var allWanted, allUnwanted Zone
 	for dgroupKey, dgroup := range dgroups {
@@ -109,6 +110,10 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 
 type dryRunProvisioner struct {
 	real Provisioner
+}
+
+func (p dryRunProvisioner) GroupFlags() []string {
+	return p.real.GroupFlags()
 }
 
 func (p dryRunProvisioner) RemoteZone() (Zone, error) {

@@ -65,6 +65,11 @@ func NewRoute53(cfg Route53Config) *Route53 {
 }
 
 // RemoteZone creates a Zone from an AWS Route53 Hosted Zone.
+func (r *Route53) GroupFlags() []string {
+	return []string{"route53.SetID"}
+}
+
+// RemoteZone creates a Zone from an AWS Route53 Hosted Zone.
 func (r *Route53) RemoteZone() (Zone, error) {
 	var err error
 	r.Lock()
