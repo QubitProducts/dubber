@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -30,11 +31,11 @@ type Server struct {
 
 	*http.ServeMux
 	*prometheus.Registry
-	MetricActiveDicoverers     prometheus.Gauge
-	MetricDiscovererRuns       *prometheus.CounterVec
-	MetricDiscovererZoneSerial *prometheus.GaugeVec
-	MetricReconcileRuns        *prometheus.CounterVec
-	MetricReconcileTimes       *prometheus.HistogramVec
+	MetricActiveDicoverers      prometheus.Gauge
+	MetricDiscovererRuns        *prometheus.CounterVec
+	MetricProvisionerZoneSerial *prometheus.GaugeVec
+	MetricReconcileRuns         *prometheus.CounterVec
+	MetricReconcileTimes        *prometheus.HistogramVec
 }
 
 // New creates a new dubber server.
@@ -55,9 +56,9 @@ func New(cfg *Config) *Server {
 		Help: "Total count of discoverer runs.",
 	}, []string{"status"})
 
-	srv.MetricDiscovererZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "dubber_discoverer_zone_serial",
-		Help: "Zone serial numbers as discoverd from sources.",
+	srv.MetricProvisionerZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "dubber_provisioner_zone_serial",
+		Help: "Zone serial numbers as discoverd from provisioners.",
 	}, []string{"zone"})
 
 	srv.MetricReconcileRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -72,7 +73,7 @@ func New(cfg *Config) *Server {
 
 	srv.MustRegister(srv.MetricActiveDicoverers)
 	srv.MustRegister(srv.MetricDiscovererRuns)
-	srv.MustRegister(srv.MetricDiscovererZoneSerial)
+	srv.MustRegister(srv.MetricProvisionerZoneSerial)
 	srv.MustRegister(srv.MetricReconcileRuns)
 	srv.MustRegister(srv.MetricReconcileTimes)
 
@@ -142,6 +143,12 @@ func (srv *Server) Run(ctx context.Context) error {
 			var fullZone Zone
 			for i := range dzones {
 				fullZone = append(fullZone, dzones[i]...)
+				for r := range fullZone {
+					if soa, ok := fullZone[r].RR.(*dns.SOA); ok {
+						srv.MetricProvisionerZoneSerial.WithLabelValues(
+							soa.Header().Name).Set(float64(soa.Serial))
+					}
+				}
 			}
 
 			zones := fullZone.Partition(provisionZones)
