@@ -65,6 +65,14 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 		return fmt.Errorf("no SOA records found")
 	}
 
+	// generate a new SOA record.
+	soa, ok := soarr.RR.(*dns.SOA)
+	if !ok {
+		return fmt.Errorf("unable to cast dns.RR %q to SOA record", soa)
+	}
+
+	srv.MetricDiscoveredZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
+
 	dgroups := desired.Group(p.GroupFlags())
 	rgroups := remz.Group(p.GroupFlags())
 
@@ -90,12 +98,6 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	if len(allWanted) == 0 && len(allUnwanted) == 0 {
 		glog.V(1).Info("nothing to do")
 		return nil
-	}
-
-	// generate a new SOA record.
-	soa, ok := soarr.RR.(*dns.SOA)
-	if !ok {
-		return fmt.Errorf("unable to cast dns.RR %q to SOA record", soa)
 	}
 
 	newsoa := *soa

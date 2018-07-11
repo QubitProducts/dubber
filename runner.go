@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -133,12 +132,6 @@ func (srv *Server) Run(ctx context.Context) error {
 						srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 					}
 					srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "success"}).Inc()
-					for _, rr := range z {
-						if soa, ok := rr.RR.(*dns.SOA); ok {
-							srv.MetricDiscoveredZoneSerial.WithLabelValues(
-								soa.Header().Name).Set(float64(soa.Serial))
-						}
-					}
 					upds <- update{i, z}
 				}
 			}
