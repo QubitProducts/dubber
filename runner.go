@@ -33,7 +33,8 @@ type Server struct {
 	*prometheus.Registry
 	MetricActiveDicoverers      prometheus.Gauge
 	MetricDiscovererRuns        *prometheus.CounterVec
-	MetricProvisionerZoneSerial *prometheus.GaugeVec
+	MetricDiscoveredZoneSerial  *prometheus.GaugeVec
+	MetricProvisionedZoneSerial *prometheus.GaugeVec
 	MetricReconcileRuns         *prometheus.CounterVec
 	MetricReconcileTimes        *prometheus.HistogramVec
 }
@@ -56,9 +57,14 @@ func New(cfg *Config) *Server {
 		Help: "Total count of discoverer runs.",
 	}, []string{"status"})
 
-	srv.MetricProvisionerZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "dubber_provisioner_zone_serial",
+	srv.MetricDiscoveredZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "dubber_discovered_zone_serial",
 		Help: "Zone serial numbers as discoverd from provisioners.",
+	}, []string{"zone"})
+
+	srv.MetricProvisionedZoneSerial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "dubber_provisioned_zone_serial",
+		Help: "Zone serial set by provisioner.",
 	}, []string{"zone"})
 
 	srv.MetricReconcileRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -73,7 +79,8 @@ func New(cfg *Config) *Server {
 
 	srv.MustRegister(srv.MetricActiveDicoverers)
 	srv.MustRegister(srv.MetricDiscovererRuns)
-	srv.MustRegister(srv.MetricProvisionerZoneSerial)
+	srv.MustRegister(srv.MetricDiscoveredZoneSerial)
+	srv.MustRegister(srv.MetricProvisionedZoneSerial)
 	srv.MustRegister(srv.MetricReconcileRuns)
 	srv.MustRegister(srv.MetricReconcileTimes)
 
@@ -145,7 +152,7 @@ func (srv *Server) Run(ctx context.Context) error {
 				fullZone = append(fullZone, dzones[i]...)
 				for r := range fullZone {
 					if soa, ok := fullZone[r].RR.(*dns.SOA); ok {
-						srv.MetricProvisionerZoneSerial.WithLabelValues(
+						srv.MetricDiscoveredZoneSerial.WithLabelValues(
 							soa.Header().Name).Set(float64(soa.Serial))
 					}
 				}
