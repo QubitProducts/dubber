@@ -133,6 +133,12 @@ func (srv *Server) Run(ctx context.Context) error {
 						srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 					}
 					srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "success"}).Inc()
+					for _, rr := range z {
+						if soa, ok := rr.RR.(*dns.SOA); ok {
+							srv.MetricDiscoveredZoneSerial.WithLabelValues(
+								soa.Header().Name).Set(float64(soa.Serial))
+						}
+					}
 					upds <- update{i, z}
 				}
 			}
@@ -150,12 +156,6 @@ func (srv *Server) Run(ctx context.Context) error {
 			var fullZone Zone
 			for i := range dzones {
 				fullZone = append(fullZone, dzones[i]...)
-				for r := range fullZone {
-					if soa, ok := fullZone[r].RR.(*dns.SOA); ok {
-						srv.MetricDiscoveredZoneSerial.WithLabelValues(
-							soa.Header().Name).Set(float64(soa.Serial))
-					}
-				}
 			}
 
 			zones := fullZone.Partition(provisionZones)
