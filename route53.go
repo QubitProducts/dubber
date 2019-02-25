@@ -208,7 +208,7 @@ func awsRRSToRecord(r53 *route53.ResourceRecordSet) (Zone, error) {
 		str := fmt.Sprintf("%s %d IN %s %s", *r53.Name, *r53.TTL, *r53.Type, *rr.Value)
 		drr, err := dns.NewRR(str)
 		if err != nil {
-			glog.Info("failed parsing record %q, %v", str, err)
+			glog.Infof("failed parsing record %q, %v", str, err)
 			continue
 		}
 
