@@ -173,22 +173,16 @@ func (z ByRR) Compare(i, j int) int {
 
 // Dedupe z , z must already be sorted.
 func (z ByRR) Dedupe() ByRR {
-	if len(z) <= 1 {
-		return z
-	}
-	i := 1
-	for {
-		if z.Compare(i-1, i) == 0 {
-			copy(z[i:], z[i+1:])
-			z = z[:len(z)-1]
+	j := 0
+	for i := 1; i < len(z); i++ {
+		if z.Compare(j, i) == 0 {
+			continue
 		}
+		j++
+		z[j] = z[i]
 
-		if i == len(z)-1 {
-			break
-		}
-		i++
 	}
-	return z
+	return z[:j+1]
 }
 
 // ZoneError is the set of errors seen when parsing Zone
