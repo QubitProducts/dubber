@@ -173,6 +173,10 @@ func (z ByRR) Compare(i, j int) int {
 
 // Dedupe z , z must already be sorted.
 func (z ByRR) Dedupe() ByRR {
+	if len(z) <= 1 {
+		return z
+	}
+
 	j := 0
 	for i := 1; i < len(z); i++ {
 		if z.Compare(j, i) == 0 {
