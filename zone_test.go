@@ -246,6 +246,7 @@ thing.example.com.	10	IN	A	3.3.3.3 ; route53.SetID=set2`},
 			for _, g := range gs {
 				zs = append(zs, g.String())
 			}
+			sort.Strings(zs)
 			if !reflect.DeepEqual(st.exp, zs) {
 				t.Fatalf("  expected: %#v\n  got: %#v", st.exp, zs)
 			}
