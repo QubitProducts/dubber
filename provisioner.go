@@ -31,7 +31,7 @@ import (
 // SOA of the current remote zone state.
 type Provisioner interface {
 	RemoteZone() (Zone, error)
-	UpdateZone(remove, add Zone) error
+	UpdateZone(remove, add, desired, remote Zone) error
 	GroupFlags() []string
 }
 
@@ -106,7 +106,7 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	allWanted = append(allWanted, &Record{RR: &newsoa})
 	allUnwanted = append(allUnwanted, soarr)
 
-	err = p.UpdateZone(allWanted, allUnwanted)
+	err = p.UpdateZone(allWanted, allUnwanted, desired, remz)
 	if err == nil {
 		srv.MetricProvisionedZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
 	}
@@ -125,7 +125,7 @@ func (p dryRunProvisioner) RemoteZone() (Zone, error) {
 	return p.real.RemoteZone()
 }
 
-func (p dryRunProvisioner) UpdateZone(remove, add Zone) error {
+func (p dryRunProvisioner) UpdateZone(remove, add, desired, remote Zone) error {
 	glog.V(1).Info("Unwanted records to be removed:\n", remove)
 	glog.V(1).Info("Wanted records to be added:\n", add)
 	return nil

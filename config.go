@@ -45,7 +45,8 @@ type Config struct {
 		Kubernetes []KubernetesConfig `yaml:"kubernetes" json:"kubernetes"`
 	} `yaml:"discoverers" json:"discoverers"`
 	Provisioners struct {
-		Route53 []Route53Config `yaml:"route53" json:"route53"`
+		Route53   []Route53Config   `yaml:"route53" json:"route53"`
+		GCloudDNS []GCloudDNSConfig `yaml:"gcloud" json:"gcloud"`
 	} `yaml:"provisioners" json:"provisioners"`
 
 	XXX `json:",omitempty" yaml:",omitempty,inline"`
@@ -89,6 +90,20 @@ func (cfg Config) BuildProvisioners() (map[string]Provisioner, error) {
 	for _, pcfg := range cfg.Provisioners.Route53 {
 		dom := pcfg.Zone
 		prv := NewRoute53(pcfg)
+		if _, ok := prvs[dom]; ok {
+			// We should actually allow this.
+			return nil, fmt.Errorf("zone %q managed by multiple provisioners", dom)
+		}
+		if cfg.DryRun {
+			prvs[dom] = dryRunProvisioner{prv}
+			continue
+		}
+		prvs[dom] = prv
+	}
+
+	for _, pcfg := range cfg.Provisioners.GCloudDNS {
+		dom := pcfg.Zone
+		prv := NewGCloudDNS(pcfg)
 		if _, ok := prvs[dom]; ok {
 			// We should actually allow this.
 			return nil, fmt.Errorf("zone %q managed by multiple provisioners", dom)

@@ -20,7 +20,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -88,6 +88,8 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 		return nil, err
 	}
 
+	glog.Infof("got past kube config")
+
 	return &Kubernetes{Clientset: clientset}, err
 }
 
@@ -97,7 +99,9 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 // Subsequent calls block until an individial update is found.
 func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	m.Lock()
-	m.Unlock()
+	defer m.Unlock()
+
+	glog.Info("Pulling state from kubernetes")
 
 	nodesM := map[string]v1.Node{}
 	nodesL, err := m.Core().Nodes().List(metav1.ListOptions{})

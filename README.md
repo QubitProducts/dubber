@@ -20,7 +20,7 @@ Output of the template is parsed as  RFC 1035 Zone file content using
 [github.com/miekg](https://godoc.org/github.com/miekg).
 
 The resulting zone file is then passed to DNS provisioners (currently
-route53, gcloud DNS coming soon), which reconcile the provided zone
+route53 and gcloud DNS), which reconcile the provided zone
 content with the running zone.
 
 Template can use the comments on a DNS record to pass hints to the

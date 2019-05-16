@@ -1,7 +1,7 @@
 module github.com/QubitProducts/dubber
 
 require (
-	cloud.google.com/go v0.24.0
+	cloud.google.com/go v0.39.0
 	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/PuerkitoBio/purell v1.1.0
@@ -20,13 +20,17 @@ require (
 	github.com/go-openapi/swag v0.0.0-20180703152219-2b0bd4f193d0
 	github.com/gogo/protobuf v1.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.1.0
-	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a
+	github.com/golang/mock v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.1
+	github.com/google/btree v1.0.0
+	github.com/google/go-cmp v0.3.0 // indirect
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
+	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
 	github.com/google/uuid v0.0.0-20161128191214-064e2069ce9c
 	github.com/googleapis/gnostic v0.2.0
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
+	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/huandu/xstrings v1.0.0
 	github.com/imdario/mergo v0.3.5
@@ -48,15 +52,25 @@ require (
 	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f
 	github.com/spf13/cobra v0.0.0-20180629152535-a114f312e075
 	github.com/spf13/pflag v1.0.1
-	golang.org/x/crypto v0.0.0-20180621125126-a49355c7e3f8
-	golang.org/x/net v0.0.0-20180710231904-039a4258aec0
-	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd
-	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
-	golang.org/x/sys v0.0.0-20180709060233-1b2967e3c290
-	golang.org/x/text v0.3.0
-	google.golang.org/appengine v1.1.0
+	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
+	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
+	golang.org/x/image v0.0.0-20190516052701-61b8692d9a5c // indirect
+	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
+	golang.org/x/mobile v0.0.0-20190509164839-32b2708ab171 // indirect
+	golang.org/x/net v0.0.0-20190514140710-3ec191127204
+	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sys v0.0.0-20190516014833-cab07311ab81
+	golang.org/x/text v0.3.2
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
+	golang.org/x/tools v0.0.0-20190516015132-d1a3278ee749 // indirect
+	google.golang.org/api v0.5.0
+	google.golang.org/appengine v1.6.0
+	google.golang.org/genproto v0.0.0-20190515210553-995ef27e003f // indirect
+	google.golang.org/grpc v1.20.1 // indirect
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/yaml.v2 v2.2.1
+	honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a // indirect
 	k8s.io/api v0.0.0-20180103015100-006a217681ae
 	k8s.io/apimachinery v0.0.0-20180103014849-68f9c3a1feb3
 	k8s.io/client-go v0.0.0-20180103015815-9389c055a838
