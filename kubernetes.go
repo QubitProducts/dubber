@@ -104,7 +104,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	glog.Info("Pulling state from kubernetes")
 
 	nodesM := map[string]v1.Node{}
-	nodesL, err := m.Core().Nodes().List(metav1.ListOptions{})
+	nodesL, err := m.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	ingsM := map[string]v1beta1.Ingress{}
-	ingsL, err := m.Extensions().Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
+	ingsL, err := m.ExtensionsV1beta1().Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	svcsM := map[string]v1.Service{}
-	svcsL, err := m.Core().Services(metav1.NamespaceAll).List(metav1.ListOptions{})
+	svcsL, err := m.CoreV1().Services(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	epsM := map[string]v1.Endpoints{}
-	epsL, err := m.Core().Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
+	epsL, err := m.CoreV1().Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
