@@ -4,8 +4,9 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.39.0
-	github.com/Masterminds/semver v1.4.2
-	github.com/Masterminds/sprig v2.15.0+incompatible
+	github.com/Masterminds/goutils v1.1.0 // indirect
+	github.com/Masterminds/semver v1.5.0
+	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/PuerkitoBio/purell v1.1.0
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 	github.com/aokoli/goutils v1.0.1
@@ -34,8 +35,8 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
-	github.com/huandu/xstrings v1.0.0
-	github.com/imdario/mergo v0.3.5
+	github.com/huandu/xstrings v1.3.1
+	github.com/imdario/mergo v0.3.9
 	github.com/inconshreveable/mousetrap v1.0.0
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
 	github.com/jmoiron/sqlx v1.2.0
@@ -44,6 +45,8 @@ require (
 	github.com/mailru/easyjson v0.0.0-20180606163543-3fdea8d05856
 	github.com/matttproud/golang_protobuf_extensions v1.0.1
 	github.com/miekg/dns v1.0.8
+	github.com/mitchellh/copystructure v1.0.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/modern-go/reflect2 v1.0.1
 	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c
@@ -55,7 +58,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f
 	github.com/spf13/cobra v0.0.0-20180629152535-a114f312e075
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
 	golang.org/x/image v0.0.0-20190516052701-61b8692d9a5c // indirect
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
