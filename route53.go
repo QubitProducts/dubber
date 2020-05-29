@@ -85,7 +85,7 @@ func (r *Route53) RemoteZone() (Zone, error) {
 }
 
 // UpdateZone updates a Route53 zone, removing the unwanted records, and
-// adding any unwanted records.
+// adding any wanted records.
 func (r *Route53) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	var err error
 	if r.ZoneID == "" {

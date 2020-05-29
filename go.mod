@@ -38,6 +38,7 @@ require (
 	github.com/imdario/mergo v0.3.5
 	github.com/inconshreveable/mousetrap v1.0.0
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/json-iterator/go v1.1.8
 	github.com/juju/ratelimit v1.0.1
 	github.com/mailru/easyjson v0.0.0-20180606163543-3fdea8d05856

@@ -31,7 +31,7 @@ import (
 // SOA of the current remote zone state.
 type Provisioner interface {
 	RemoteZone() (Zone, error)
-	UpdateZone(remove, add, desired, remote Zone) error
+	UpdateZone(wanted, unwanted, desired, remote Zone) error
 	GroupFlags() []string
 }
 
@@ -71,7 +71,9 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 		return fmt.Errorf("unable to cast dns.RR %q to SOA record", soa)
 	}
 
-	srv.MetricDiscoveredZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
+	if srv != nil {
+		srv.MetricDiscoveredZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
+	}
 
 	dgroups := desired.Group(p.GroupFlags())
 	rgroups := remz.Group(p.GroupFlags())
@@ -107,7 +109,7 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	allUnwanted = append(allUnwanted, soarr)
 
 	err = p.UpdateZone(allWanted, allUnwanted, desired, remz)
-	if err == nil {
+	if err == nil && srv != nil {
 		srv.MetricProvisionedZoneSerial.WithLabelValues(soa.Header().Name).Set(float64(soa.Serial))
 	}
 	return err
@@ -125,8 +127,8 @@ func (p dryRunProvisioner) RemoteZone() (Zone, error) {
 	return p.real.RemoteZone()
 }
 
-func (p dryRunProvisioner) UpdateZone(remove, add, desired, remote Zone) error {
-	glog.V(1).Info("Unwanted records to be removed:\n", remove)
-	glog.V(1).Info("Wanted records to be added:\n", add)
+func (p dryRunProvisioner) UpdateZone(allWanted, allUnwanted, desired, remote Zone) error {
+	glog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
+	glog.V(1).Info("Wanted records to be added:\n", allWanted)
 	return nil
 }
