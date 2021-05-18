@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/golang/glog"
 	"github.com/miekg/dns"
+	klog "k8s.io/klog/v2"
 )
 
 // A Provisioner can manage a zone. RemoteZone should include exactly 1 SOA
@@ -98,7 +98,7 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	}
 
 	if len(allWanted) == 0 && len(allUnwanted) == 0 {
-		glog.V(1).Info("nothing to do")
+		klog.V(1).Info("nothing to do")
 		return nil
 	}
 
@@ -128,7 +128,7 @@ func (p dryRunProvisioner) RemoteZone() (Zone, error) {
 }
 
 func (p dryRunProvisioner) UpdateZone(allWanted, allUnwanted, desired, remote Zone) error {
-	glog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
-	glog.V(1).Info("Wanted records to be added:\n", allWanted)
+	klog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
+	klog.V(1).Info("Wanted records to be added:\n", allWanted)
 	return nil
 }

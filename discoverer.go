@@ -22,8 +22,8 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	klog "k8s.io/klog/v2"
 )
 
 // State is any data passed from the discoverer to the
@@ -52,7 +52,7 @@ func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 		return nil, errors.Wrap(err, "failed to pull state")
 	}
 
-	glog.V(2).Infof("template state input: %#v\n", state)
+	klog.V(2).Infof("template state input: %#v\n", state)
 
 	buf := &bytes.Buffer{}
 	err = d.Execute(buf, state)
@@ -60,7 +60,7 @@ func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 		return nil, errors.Wrap(err, "failed to render zone")
 	}
 
-	glog.V(1).Info("template output:\n", buf.String())
+	klog.V(1).Info("template output:\n", buf.String())
 
 	z, err := ParseZoneData(buf)
 	if err != nil {

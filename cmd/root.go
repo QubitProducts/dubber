@@ -25,8 +25,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/QubitProducts/dubber"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	klog "k8s.io/klog/v2"
 )
 
 var cfgFile = "dubber.yaml"
@@ -39,7 +39,6 @@ var pollInterval time.Duration
 var RootCmd *cobra.Command
 
 func init() {
-	goflag.CommandLine.Set("alsologtostderr", "true")
 	RootCmd = &cobra.Command{
 		Use:   "dubber",
 		Short: "dubber provisions DNS names for dynamic services",
@@ -54,17 +53,20 @@ func init() {
 	RootCmd.PersistentFlags().DurationVar(&pollInterval, "poll.interval", time.Minute*1, "How often to poll and check for updates")
 	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
 	RootCmd.Run = func(cmd *cobra.Command, args []string) {
-		defer glog.Flush()
+		defer klog.Flush()
+		klog.InitFlags(goflag.CommandLine)
+		goflag.CommandLine.Set("alsologtostderr", "true")
+
 		goflag.CommandLine.Parse([]string{})
 
-		glog.Info("Starting dubber")
+		klog.Info("Starting dubber")
 
 		ctx, cancel := context.WithCancel(context.Background())
 		sigs := make(chan os.Signal)
 		signal.Notify(sigs, os.Interrupt)
 		go func() {
 			sig := <-sigs
-			glog.Infof("Shutting down due to %v", sig)
+			klog.Infof("Shutting down due to %v", sig)
 			cancel()
 		}()
 
@@ -73,12 +75,12 @@ func init() {
 
 		r, err := os.Open(cfgFile)
 		if err != nil {
-			glog.Fatalf("Unable to open config file %s, %v", cfgFile, err)
+			klog.Fatalf("Unable to open config file %s, %v", cfgFile, err)
 		}
 
 		cfg, err := dubber.FromYAML(r)
 		if err != nil {
-			glog.Fatalf("Unable to read config, %v", err)
+			klog.Fatalf("Unable to read config, %v", err)
 		}
 
 		cfg.DryRun = dryrun
@@ -90,7 +92,7 @@ func init() {
 		if statsAddr != "" {
 			g.Go(func() error {
 				if err := http.ListenAndServe(statsAddr, d); err != nil {
-					glog.Fatalf("stats service failed, %v", err)
+					klog.Fatalf("stats service failed, %v", err)
 					return err
 				}
 				return nil
@@ -99,7 +101,7 @@ func init() {
 
 		g.Go(func() error {
 			if err := d.Run(ctx); err != nil {
-				glog.Fatalf("runner failed, %v", err)
+				klog.Fatalf("runner failed, %v", err)
 				return err
 			}
 			return nil
@@ -108,9 +110,7 @@ func init() {
 		<-ctx.Done()
 
 		if ctx.Err() != context.Canceled && ctx.Err() != nil {
-			glog.Fatalf("%v", ctx.Err())
+			klog.Fatalf("%v", ctx.Err())
 		}
-
-		os.Exit(0)
 	}
 }

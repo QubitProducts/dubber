@@ -19,9 +19,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/klog"
 )
 
 // Server wraps the configuration and basic functionality.
@@ -128,7 +128,7 @@ func (srv *Server) Run(ctx context.Context) error {
 				case <-ticker.C:
 					z, err := d.Discover(ctx)
 					if err != nil {
-						glog.Info("error", err)
+						klog.Info("error", err)
 						srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 					}
 					srv.MetricDiscovererRuns.With(prometheus.Labels{"status": "success"}).Inc()
@@ -156,7 +156,7 @@ func (srv *Server) Run(ctx context.Context) error {
 			for zn, newzone := range zones {
 				p, ok := provs[zn]
 				if !ok {
-					glog.V(1).Infof("no provisioner for zone %q\n", zn)
+					klog.V(1).Infof("no provisioner for zone %q\n", zn)
 					continue
 				}
 				func() {
@@ -166,7 +166,7 @@ func (srv *Server) Run(ctx context.Context) error {
 					defer timer.ObserveDuration()
 
 					if err := srv.ReconcileZone(p, newzone); err != nil {
-						glog.Infof(err.Error())
+						klog.Infof(err.Error())
 						srv.MetricReconcileRuns.With(prometheus.Labels{"status": "failed"}).Inc()
 						return
 					}

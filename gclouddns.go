@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/golang/glog"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	gdns "google.golang.org/api/dns/v1beta2"
+	klog "k8s.io/klog/v2"
 )
 
 // GCloudDNSConfig describes the settings required for controlling a Google
@@ -46,7 +46,7 @@ func NewGCloudDNS(cfg GCloudDNSConfig) *GCloudDNS {
 
 	svc, err := gdns.NewService(ctx)
 	if err != nil {
-		glog.Fatalf("failed to create gcloud DNS client")
+		klog.Fatalf("failed to create gcloud DNS client")
 	}
 
 	return &GCloudDNS{
@@ -77,7 +77,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	for key, recs := range (Zone{unwanted[len(unwanted)-1]}).Group([]string{}) {
 		rs, err := recordToGDNSRRS(key, recs)
 		if err != nil {
-			glog.Errorf("error %s", err)
+			klog.Errorf("error %s", err)
 			return errors.Wrap(err, "generating soa Deletion record")
 		}
 		change.Deletions = append(change.Deletions, rs)
@@ -85,7 +85,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	for key, recs := range (Zone{wanted[len(wanted)-1]}).Group([]string{}) {
 		rs, err := recordToGDNSRRS(key, recs)
 		if err != nil {
-			glog.Errorf("error %s", err)
+			klog.Errorf("error %s", err)
 			return errors.Wrap(err, "generating soa Deletion record")
 		}
 		change.Additions = append(change.Additions, rs)
@@ -98,22 +98,22 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 		if rrecs, ok := rgs[key]; ok {
 			rs, err := recordToGDNSRRS(key, rrecs)
 			if err != nil {
-				glog.Errorf("error %s", err)
+				klog.Errorf("error %s", err)
 				return errors.Wrap(err, "generating updating Deletion record")
 			}
 
-			glog.V(1).Infof("gcloud deletion: %v", *rs)
+			klog.V(1).Infof("gcloud deletion: %v", *rs)
 			change.Deletions = append(change.Deletions, rs)
 		}
 
 		rs, err := recordToGDNSRRS(key, recs)
 
 		if err != nil {
-			glog.Errorf("error %s", err)
+			klog.Errorf("error %s", err)
 			return errors.Wrap(err, "generating updating Additions record")
 		}
 
-		glog.V(1).Infof("gcloud addition: %v", *rs)
+		klog.V(1).Infof("gcloud addition: %v", *rs)
 		change.Additions = append(change.Additions, rs)
 	}
 
@@ -122,7 +122,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 		return err
 	}
 
-	glog.V(1).Infof("Change succeeded:\n %v", resp)
+	klog.V(1).Infof("Change succeeded:\n %v", resp)
 
 	return nil
 }
@@ -136,7 +136,7 @@ func zoneFromGCloudDNS(svc *gdns.Service, project, zone string) (Zone, error) {
 		return nil
 	})
 	if err != nil {
-		glog.Errorf("error %#v", err)
+		klog.Errorf("error %#v", err)
 		return nil, err
 	}
 
@@ -165,7 +165,7 @@ func gdnsRRSToRecord(r *gdns.ResourceRecordSet) (Zone, error) {
 		str := fmt.Sprintf("%s %d IN %s %s", r.Name, r.Ttl, r.Type, rr)
 		drr, err := dns.NewRR(str)
 		if err != nil {
-			glog.Infof("failed parsing record %q, %v", str, err)
+			klog.Infof("failed parsing record %q, %v", str, err)
 			continue
 		}
 

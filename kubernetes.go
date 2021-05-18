@@ -18,14 +18,13 @@ import (
 	"context"
 	"sync"
 
-	"github.com/golang/glog"
-
 	v1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 // KubernetesConfig describes configuration options for
@@ -65,15 +64,15 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 		configOverrides := &clientcmd.ConfigOverrides{CurrentContext: cfg.Context}
 
 		if cfg.Context != "" {
-			glog.Infof("Building kube client for context %q from %s", cfg.Context, cfg.FileName)
+			klog.Infof("Building kube client for context %q from %s", cfg.Context, cfg.FileName)
 		} else {
-			glog.Infof("Building kube client for default context  from %s", cfg.FileName)
+			klog.Infof("Building kube client for default context  from %s", cfg.FileName)
 		}
 
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 		config, err = kubeConfig.ClientConfig()
 	} else {
-		glog.Info("Building in-cluster kube client")
+		klog.Info("Building in-cluster kube client")
 		config, err = rest.InClusterConfig()
 	}
 
@@ -88,7 +87,7 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 		return nil, err
 	}
 
-	glog.Infof("got past kube config")
+	klog.Infof("got past kube config")
 
 	return &Kubernetes{Clientset: clientset}, err
 }
@@ -101,7 +100,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	m.Lock()
 	defer m.Unlock()
 
-	glog.Info("Pulling state from kubernetes")
+	klog.Info("Pulling state from kubernetes")
 
 	nodesM := map[string]v1.Node{}
 	nodesL, err := m.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
