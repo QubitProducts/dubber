@@ -21,7 +21,7 @@ import (
 	"github.com/golang/glog"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -41,7 +41,7 @@ type KubernetesConfig struct {
 // template.
 type KubernetesState struct {
 	Nodes     map[string]v1.Node
-	Ingresses map[string]v1beta1.Ingress
+	Ingresses map[string]netv1.Ingress
 	Services  map[string]v1.Service
 	Endpoints map[string]v1.Endpoints
 }
@@ -104,7 +104,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	glog.Info("Pulling state from kubernetes")
 
 	nodesM := map[string]v1.Node{}
-	nodesL, err := m.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodesL, err := m.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +112,8 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 		nodesM[n.ObjectMeta.Name] = n
 	}
 
-	ingsM := map[string]v1beta1.Ingress{}
-	ingsL, err := m.ExtensionsV1beta1().Ingresses(metav1.NamespaceAll).List(metav1.ListOptions{})
+	ingsM := map[string]netv1.Ingress{}
+	ingsL, err := m.NetworkingV1().Ingresses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	svcsM := map[string]v1.Service{}
-	svcsL, err := m.CoreV1().Services(metav1.NamespaceAll).List(metav1.ListOptions{})
+	svcsL, err := m.CoreV1().Services(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 	}
 
 	epsM := map[string]v1.Endpoints{}
-	epsL, err := m.CoreV1().Endpoints(metav1.NamespaceAll).List(metav1.ListOptions{})
+	epsL, err := m.CoreV1().Endpoints(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

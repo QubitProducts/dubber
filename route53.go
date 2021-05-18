@@ -265,6 +265,10 @@ func recordToAWSRRS(r *Record) (*route53.ResourceRecordSet, error) {
 		r53.SetIdentifier = &setIDStr
 	}
 
+	if region, ok := r.Flags["route53.Region"]; ok {
+		r53.Region = &region
+	}
+
 	if weighStr, ok := r.Flags["route53.Weight"]; ok {
 		w, err := strconv.Atoi(weighStr)
 		if err != nil {
