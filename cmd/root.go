@@ -46,6 +46,8 @@ func init() {
                 discovered from orchestration tools.`,
 	}
 
+	klog.InitFlags(goflag.CommandLine)
+	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", cfgFile, "config file (default is dubber.yaml)")
 	RootCmd.PersistentFlags().StringVar(&statsAddr, "addr", statsAddr, "statistics endpoint")
 	RootCmd.PersistentFlags().BoolVar(&dryrun, "dry-run", false, "Just log the actions to be taken")
@@ -53,8 +55,6 @@ func init() {
 	RootCmd.PersistentFlags().DurationVar(&pollInterval, "poll.interval", time.Minute*1, "How often to poll and check for updates")
 	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
 	RootCmd.Run = func(cmd *cobra.Command, args []string) {
-		defer klog.Flush()
-		klog.InitFlags(goflag.CommandLine)
 		goflag.CommandLine.Set("alsologtostderr", "true")
 
 		goflag.CommandLine.Parse([]string{})
