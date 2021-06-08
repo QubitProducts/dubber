@@ -16,6 +16,7 @@ package dubber
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
@@ -92,6 +93,10 @@ func NewKubernetes(cfg KubernetesConfig) (*Kubernetes, error) {
 	return &Kubernetes{Clientset: clientset}, err
 }
 
+func key(md metav1.ObjectMeta) string {
+	return fmt.Sprintf("%s/%s", md.GetNamespace(), md.GetName())
+}
+
 // StatePull watches, or polls, marathon for new applications.
 // Any matching the requires constraints are returned.
 // THe first call to Discover returns all the known apps,
@@ -108,7 +113,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 		return nil, err
 	}
 	for _, n := range nodesL.Items {
-		nodesM[n.ObjectMeta.Name] = n
+		nodesM[key(n.ObjectMeta)] = n
 	}
 
 	ingsM := map[string]netv1.Ingress{}
@@ -117,7 +122,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 		return nil, err
 	}
 	for _, i := range ingsL.Items {
-		ingsM[i.ObjectMeta.Name] = i
+		ingsM[key(i.ObjectMeta)] = i
 	}
 
 	svcsM := map[string]v1.Service{}
@@ -126,7 +131,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 		return nil, err
 	}
 	for _, s := range svcsL.Items {
-		svcsM[s.ObjectMeta.Name] = s
+		svcsM[key(s.ObjectMeta)] = s
 	}
 
 	epsM := map[string]v1.Endpoints{}
@@ -135,7 +140,7 @@ func (m *Kubernetes) StatePull(ctx context.Context) (State, error) {
 		return nil, err
 	}
 	for _, e := range epsL.Items {
-		epsM[e.ObjectMeta.Name] = e
+		epsM[key(e.ObjectMeta)] = e
 	}
 
 	return &KubernetesState{
