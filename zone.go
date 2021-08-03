@@ -213,28 +213,32 @@ func (z ZoneError) Error() string {
 func ParseZoneData(r io.Reader) (Zone, error) {
 	var errs []error
 	var z Zone
+	zp := dns.NewZoneParser(r, ".", "")
 
-	for t := range dns.ParseZone(r, ".", "") {
-		if t.Error != nil {
-			errs = append(errs, t.Error)
-			continue
+	for {
+		rr, ok := zp.Next()
+		if !ok {
+			break
 		}
-		if t.RR == nil {
+		if rr == nil {
 			continue
 		}
 		var flags RecordFlags
-		if len(t.Comment) > 1 {
+		if cmnt := zp.Comment(); len(cmnt) > 1 {
 			var err error
-			flags, err = ParseRecordFlags(t.Comment[1:])
+			flags, err = ParseRecordFlags(cmnt[1:])
 			if err != nil {
-				errs = append(errs, t.Error)
+				errs = append(errs, err)
 				continue
 			}
 		}
-		z = append(z, &Record{RR: t.RR, Flags: flags})
+		z = append(z, &Record{RR: rr, Flags: flags})
 	}
 
-	if len(errs) > 0 {
+	if err := zp.Err(); err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) != 0 {
 		return nil, ZoneError(errs)
 	}
 	return z, nil
