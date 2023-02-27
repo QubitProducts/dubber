@@ -27,7 +27,7 @@ import (
 // being changed. In the event that records must be added/removed from the
 // Zone retuned by RemoteZone, UpdateZone will be called with the relevant
 // changes, plus an update to the SOA record. It is assumed that an update
-// will fail if the SOA serial from the remove list does not match the
+// will fail if the SOA serial from the remote list does not match the
 // SOA of the current remote zone state.
 type Provisioner interface {
 	RemoteZone() (Zone, error)
@@ -36,14 +36,14 @@ type Provisioner interface {
 }
 
 // ReconcileZone attempts to ensure that the set of records in the desired
-// zone are pressent in the Provisioners zone.
+// zone are present in the Provisioner's zone.
 // - Records are grouped by Name.
 // - Records from the provisioner that are not listed in the desired set
 //   are ignored.
 // - Records of a given "Name, Type , Class" combination that are in the
 //   remote zone, but not in the desired zone are removed.
 // - Records of a given "Name, Type , Class" combination that are in the
-//   desired zone, nit not in the remote zone are added.
+//   desired zone, but not in the remote zone are added.
 func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	remz, err := p.RemoteZone()
 	if err != nil {
