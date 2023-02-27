@@ -21,8 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -128,7 +126,7 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 
 		d, err := NewMarathon(dcfg)
 		if err != nil {
-			return nil, errors.Wrap(err, "building marathon Discoverer failed")
+			return nil, fmt.Errorf("building marathon Discoverer failed, %w", err)
 		}
 
 		ds = append(ds, Discoverer{
@@ -145,7 +143,7 @@ func (cfg Config) BuildDiscoveres() ([]Discoverer, error) {
 
 		d, err := NewKubernetes(dcfg)
 		if err != nil {
-			return nil, errors.Wrap(err, "building kubernetes Discoverer failed")
+			return nil, fmt.Errorf("building kubernetes Discoverer failed, %w", err)
 		}
 
 		ds = append(ds, Discoverer{

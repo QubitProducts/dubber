@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	klog "k8s.io/klog/v2"
 )
 
@@ -77,7 +76,7 @@ func (r *Route53) RemoteZone() (Zone, error) {
 	if r.ZoneID == "" {
 		r.ZoneID, err = zoneIDFromRoute53(r.svc, r.Zone)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not retrieve remote zone")
+			return nil, fmt.Errorf("could not retrieve remote zone, %w", err)
 		}
 	}
 
@@ -91,7 +90,7 @@ func (r *Route53) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	if r.ZoneID == "" {
 		r.ZoneID, err = zoneIDFromRoute53(r.svc, r.Zone)
 		if err != nil {
-			return errors.Wrap(err, "could not update zone")
+			return fmt.Errorf("could not update zone, %w", err)
 		}
 	}
 
@@ -102,7 +101,7 @@ func (r *Route53) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	for _, uw := range unwanted {
 		awsrrs, err := recordToAWSRRS(uw)
 		if err != nil {
-			return errors.Wrap(err, "generating updating DELETE record")
+			return fmt.Errorf("generating updating DELETE record, %w", err)
 		}
 
 		change := route53.Change{
@@ -115,7 +114,7 @@ func (r *Route53) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 	for _, w := range wanted {
 		awsrrs, err := recordToAWSRRS(w)
 		if err != nil {
-			return errors.Wrap(err, "generating CREATE record")
+			return fmt.Errorf("generating CREATE record, %w", err)
 		}
 		change := route53.Change{
 			Action:            aws.String("CREATE"),
@@ -180,7 +179,7 @@ func zoneFromRoute53(svc route53iface.Route53API, zoneID string) (Zone, error) {
 	for i := range awsrecs {
 		newrs, err := awsRRSToRecord(awsrecs[i])
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed rendering record for %#v", awsrecs[i])
+			return nil, fmt.Errorf("failed rendering record for %#v, %w", awsrecs[i], err)
 		}
 
 		z = append(z, newrs...)
@@ -272,7 +271,7 @@ func recordToAWSRRS(r *Record) (*route53.ResourceRecordSet, error) {
 	if weighStr, ok := r.Flags["route53.Weight"]; ok {
 		w, err := strconv.Atoi(weighStr)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse weight as int")
+			return nil, fmt.Errorf("failed to parse weight as int, %w", err)
 		}
 
 		wint64 := int64(w)

@@ -20,7 +20,6 @@ import (
 	"sort"
 
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	gdns "google.golang.org/api/dns/v1beta2"
 	klog "k8s.io/klog/v2"
 )
@@ -78,7 +77,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 		rs, err := recordToGDNSRRS(key, recs)
 		if err != nil {
 			klog.Errorf("error %s", err)
-			return errors.Wrap(err, "generating soa Deletion record")
+			return fmt.Errorf("generating soa Deletion record, %w", err)
 		}
 		change.Deletions = append(change.Deletions, rs)
 	}
@@ -86,7 +85,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 		rs, err := recordToGDNSRRS(key, recs)
 		if err != nil {
 			klog.Errorf("error %s", err)
-			return errors.Wrap(err, "generating soa Deletion record")
+			return fmt.Errorf("generating soa Deletion record, %w", err)
 		}
 		change.Additions = append(change.Additions, rs)
 	}
@@ -99,7 +98,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 			rs, err := recordToGDNSRRS(key, rrecs)
 			if err != nil {
 				klog.Errorf("error %s", err)
-				return errors.Wrap(err, "generating updating Deletion record")
+				return fmt.Errorf("generating updating Deletion record, %w", err)
 			}
 
 			klog.V(1).Infof("gcloud deletion: %v", *rs)
@@ -110,7 +109,7 @@ func (r *GCloudDNS) UpdateZone(wanted, unwanted, desired, remote Zone) error {
 
 		if err != nil {
 			klog.Errorf("error %s", err)
-			return errors.Wrap(err, "generating updating Additions record")
+			return fmt.Errorf("generating updating Additions record, %w", err)
 		}
 
 		klog.V(1).Infof("gcloud addition: %v", *rs)
@@ -144,7 +143,7 @@ func zoneFromGCloudDNS(svc *gdns.Service, project, zone string) (Zone, error) {
 	for i := range recs {
 		newrs, err := gdnsRRSToRecord(recs[i])
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed rendering record for %#v", recs[i])
+			return nil, fmt.Errorf("failed rendering record for %#v, %w", recs[i], err)
 		}
 
 		z = append(z, newrs...)

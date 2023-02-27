@@ -22,7 +22,6 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/pkg/errors"
 	klog "k8s.io/klog/v2"
 )
 
@@ -49,7 +48,7 @@ type Discoverer struct {
 func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 	state, err := d.StatePull(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to pull state")
+		return nil, fmt.Errorf("failed to pull state, %w", err)
 	}
 
 	klog.V(2).Infof("template state input: %#v\n", state)
@@ -57,14 +56,14 @@ func (d *Discoverer) Discover(ctx context.Context) (Zone, error) {
 	buf := &bytes.Buffer{}
 	err = d.Execute(buf, state)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to render zone")
+		return nil, fmt.Errorf("failed to render zone, %w", err)
 	}
 
 	klog.V(1).Info("template output:\n", buf.String())
 
 	z, err := ParseZoneData(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse zone")
+		return nil, fmt.Errorf("failed to parse zone, %w", err)
 	}
 	d.State = state
 	return z, nil
