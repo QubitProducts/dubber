@@ -35,8 +35,8 @@ type BaseDiscovererConfig struct {
 // BaseProvisionerConfig is the configuration that is common to
 // all provisioners
 type BaseProvisionerConfig struct {
-	Zone           string            `yaml:"zone" json:"zone"`
-	OwnerFlagsStrs map[string]string `yaml:"ownerFlags"`
+	Zone           string                  `yaml:"zone" json:"zone"`
+	OwnerFlagsStrs map[string]JSONTemplate `yaml:"ownerFlags"`
 
 	ownerFlagsOnce sync.Once
 	ownerFlagsErr  error
@@ -46,7 +46,14 @@ type BaseProvisionerConfig struct {
 func (bp *BaseProvisionerConfig) OwnerFlags() (map[string]*regexp.Regexp, error) {
 	bp.ownerFlagsOnce.Do(func() {
 		out := map[string]*regexp.Regexp{}
-		for k, v := range bp.OwnerFlagsStrs {
+		for k, tmpl := range bp.OwnerFlagsStrs {
+			bstr := &strings.Builder{}
+			err := tmpl.Execute(bstr, nil)
+			if err != nil {
+				bp.ownerFlagsErr = err
+				return
+			}
+			v := bstr.String()
 			if !strings.HasPrefix(v, "^") {
 				v = "^" + v
 			}
