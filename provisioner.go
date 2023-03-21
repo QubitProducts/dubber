@@ -172,7 +172,7 @@ func (p dryRunProvisioner) RemoteZone() (Zone, error) {
 }
 
 func (p dryRunProvisioner) UpdateZone(allWanted, allUnwanted, desired, remote Zone) error {
-	klog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
-	klog.V(1).Info("Wanted records to be added:\n", allWanted)
+	klog.V(0).Info("Unwanted records to be removed:\n", allUnwanted)
+	klog.V(0).Info("Wanted records to be added:\n", allWanted)
 	return nil
 }
