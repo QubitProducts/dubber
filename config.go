@@ -18,7 +18,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -33,7 +35,34 @@ type BaseDiscovererConfig struct {
 // BaseProvisionerConfig is the configuration that is common to
 // all provisioners
 type BaseProvisionerConfig struct {
-	Zone string `yaml:"zone" json:"zone"`
+	Zone           string            `yaml:"zone" json:"zone"`
+	OwnerFlagsStrs map[string]string `yaml:"ownerFlags"`
+
+	ownerFlagsOnce sync.Once
+	ownerFlagsErr  error
+	ownerFlags     map[string]*regexp.Regexp
+}
+
+func (bp *BaseProvisionerConfig) OwnerFlags() (map[string]*regexp.Regexp, error) {
+	bp.ownerFlagsOnce.Do(func() {
+		out := map[string]*regexp.Regexp{}
+		for k, v := range bp.OwnerFlagsStrs {
+			if !strings.HasPrefix(v, "^") {
+				v = "^" + v
+			}
+			if !strings.HasSuffix(v, "$") {
+				v = v + "$"
+			}
+			vre, err := regexp.Compile(v)
+			if err != nil {
+				bp.ownerFlagsErr = fmt.Errorf("invalid owner flags entry %s, %w", k, err)
+				return
+			}
+			out[k] = vre
+		}
+		bp.ownerFlags = out
+	})
+	return bp.ownerFlags, bp.ownerFlagsErr
 }
 
 // Config describes the base configuration for dubber
@@ -111,6 +140,13 @@ func (cfg Config) BuildProvisioners() (map[string]Provisioner, error) {
 			continue
 		}
 		prvs[dom] = prv
+	}
+
+	for _, p := range prvs {
+		_, err := p.OwnerFlags()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return prvs, nil
 }
