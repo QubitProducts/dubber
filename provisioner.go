@@ -16,6 +16,7 @@ package dubber
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/miekg/dns"
@@ -33,17 +34,18 @@ type Provisioner interface {
 	RemoteZone() (Zone, error)
 	UpdateZone(wanted, unwanted, desired, remote Zone) error
 	GroupFlags() []string
+	OwnerFlags() (map[string]*regexp.Regexp, error)
 }
 
 // ReconcileZone attempts to ensure that the set of records in the desired
 // zone are present in the Provisioner's zone.
-// - Records are grouped by Name.
-// - Records from the provisioner that are not listed in the desired set
-//   are ignored.
-// - Records of a given "Name, Type , Class" combination that are in the
-//   remote zone, but not in the desired zone are removed.
-// - Records of a given "Name, Type , Class" combination that are in the
-//   desired zone, but not in the remote zone are added.
+//   - Records are grouped by Name.
+//   - Records from the provisioner that are not listed in the desired set
+//     are ignored.
+//   - Records of a given "Name, Type , Class" combination that are in the
+//     remote zone, but not in the desired zone are removed.
+//   - Records of a given "Name, Type , Class" combination that are in the
+//     desired zone, but not in the remote zone are added.
 func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 	remz, err := p.RemoteZone()
 	if err != nil {
@@ -97,6 +99,44 @@ func (srv *Server) ReconcileZone(p Provisioner, desired Zone) error {
 		allWanted = append(allWanted, wanted...)
 	}
 
+	// unused remote groups
+	var unusedGroups []RecordSetKey
+	for rgroupKey := range rgroups {
+		_, ok := dgroups[rgroupKey]
+		if ok {
+			continue
+		}
+		// We can ignore the error here because this string
+		// was produced by us and so should always be valid
+		fs, _ := ParseRecordFlags(rgroupKey.GroupFlags)
+		matches := 0
+
+		// We can ignore the error here because we've already
+		// parsed these from config
+		oflags, _ := p.OwnerFlags()
+		if len(oflags) == 0 {
+			continue
+		}
+		for k, rx := range oflags {
+			for fk, fv := range fs {
+				if k != fk {
+					continue
+				}
+				if rx.MatchString(fv) {
+					matches += 1
+				}
+			}
+		}
+		if matches != 0 && matches == len(oflags) {
+			unusedGroups = append(unusedGroups, rgroupKey)
+		}
+	}
+
+	for _, unusedGroupKey := range unusedGroups {
+		rgroup := Zone(ByRR(rgroups[unusedGroupKey]).Dedupe())
+		allUnwanted = append(allUnwanted, rgroup...)
+	}
+
 	if len(allWanted) == 0 && len(allUnwanted) == 0 {
 		klog.V(1).Info("nothing to do")
 		return nil
@@ -123,12 +163,16 @@ func (p dryRunProvisioner) GroupFlags() []string {
 	return p.real.GroupFlags()
 }
 
+func (p dryRunProvisioner) OwnerFlags() (map[string]*regexp.Regexp, error) {
+	return p.real.OwnerFlags()
+}
+
 func (p dryRunProvisioner) RemoteZone() (Zone, error) {
 	return p.real.RemoteZone()
 }
 
 func (p dryRunProvisioner) UpdateZone(allWanted, allUnwanted, desired, remote Zone) error {
-	klog.V(1).Info("Unwanted records to be removed:\n", allUnwanted)
-	klog.V(1).Info("Wanted records to be added:\n", allWanted)
+	klog.V(0).Info("Unwanted records to be removed:\n", allUnwanted)
+	klog.V(0).Info("Wanted records to be added:\n", allWanted)
 	return nil
 }

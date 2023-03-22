@@ -415,7 +415,7 @@ func (z Zone) Group(groupFlags []string) map[RecordSetKey]Zone {
 		var flags []string
 		for _, f := range groupFlags {
 			if v, ok := rr.Flags[f]; ok {
-				flags = append(flags, fmt.Sprintf("%s=%q", f, v))
+				flags = append(flags, fmt.Sprintf("%s=%s", f, v))
 			}
 		}
 		k := RecordSetKey{
