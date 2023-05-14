@@ -103,7 +103,7 @@ provisioners:
 ```
 
 Will create a route53 alias record, based on the dnsName and externalAccess
-labels on a Narathon task.
+labels on a Marathon task.
 
 Different disoveres can provide different data, and any number of records can be
 created for different elements.
